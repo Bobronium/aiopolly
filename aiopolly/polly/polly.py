@@ -4,12 +4,11 @@ from typing import Union, List
 import botocore
 from botocore.credentials import Credentials
 
-import aiopolly.types.enums
-from aiopolly.types.enums import AUDIO_CONTENT_TYPES
-from . import types
-from .base import BaseApiClient
-from .utils.lexicon import LexiconTemplate
-from .utils.payload import generate_params
+from .api import AmazonAPIClient
+from .. import types
+from ..types.enums import AUDIO_CONTENT_TYPES
+from ..utils.lexicon import LexiconTemplate
+from ..utils.payload import generate_params
 
 
 class Methods:
@@ -63,7 +62,7 @@ class Methods:
     )
 
 
-class Polly(BaseApiClient):
+class Polly(AmazonAPIClient):
     """
     You can init this class using one of three methods of authorisation:
         1) Provide prepared botocore.credentials.Credentials instance
@@ -299,11 +298,11 @@ class Polly(BaseApiClient):
 
     async def synthesize_speech(self, text: str,
                                 voice_id: str = None,
-                                output_format: Union[aiopolly.types.enums.AudioFormat, str] = None,
+                                output_format: Union[types.AudioFormat, str] = None,
                                 sample_rate: str = None,
-                                speech_mark_types: List[Union[aiopolly.types.enums.SpeechMarkTypes, str]] = None,
-                                text_type: Union[aiopolly.types.enums.TextType, str] = None,
-                                language_code: Union[aiopolly.types.enums.LanguageCode, str] = None,
+                                speech_mark_types: List[Union[types.SpeechMarkTypes, str]] = None,
+                                text_type: Union[types.TextType, str] = None,
+                                language_code: Union[types.LanguageCode, str] = None,
                                 lexicon_names: list = None,
                                 ) -> Union[types.Speech, types.SpeechMarksList]:
         """
@@ -324,7 +323,7 @@ class Polly(BaseApiClient):
         payload = generate_params(**locals(), defaults=self.__dict__)
         result = await self.request(self.methods.SynthesizeSpeech, payload=payload)
 
-        if (output_format or self.output_format) == aiopolly.types.enums.AudioFormat.json:
+        if (output_format or self.output_format) == types.AudioFormat.json:
             return types.SpeechMarksList(speech_marks=result)
 
         return types.Speech(**result)

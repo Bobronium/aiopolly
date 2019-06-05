@@ -3,6 +3,13 @@
 
 Asynchronous client for Amazon Polly API which respects PEP-8 and has type-hinting
 
+#Features
+- Asynchronous
+- Throws python exceptions 
+- Provides easy way to manage ssml tags and lexicons
+- Respects PEP-8
+- Makes things faster
+
 # Installation
 ```bash
 $ pip install "https://github.com/MrMrRozbat/aiopolly/archive/master.zip"
@@ -139,6 +146,24 @@ async def main():
 loop = asyncio.get_event_loop()
 loop.run_until_complete(main())
 ```
+##Using SSML Text
+aiopolly got built-in ssml-text factory which you can use to manage your ssml text:
+```python
+from aiopolly.utils.ssml import ssml_text, prosody, emphasis, pause
+from aiopolly.utils.ssml.enums import Level, Volume, Pitch
+
+text = ssml_text(
+    prosody(
+        f'{emphasis("Whatever", level=Level.strong)} you can do I can {emphasis("override")} it '
+        + pause(milliseconds=30)
+        + f'Got a million ways to {emphasis("synthesize", level=Level.strong)} it',
+        max_duration_seconds=4.5, volume=Volume.medium, pitch=Pitch.high
+    )
+)
+
+```
+
+
 
 
 ###### Inspired by Alex Root Junior's [aiogram](https://github.com/aiogram/aiogram)

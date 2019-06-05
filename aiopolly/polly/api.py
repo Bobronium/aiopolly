@@ -9,14 +9,14 @@ import certifi
 from botocore.auth import SigV4Auth
 from botocore.awsrequest import AWSRequest
 
-from .types import ContentType
-from .types.enums import AUDIO_CONTENT_TYPES
-from .types.method import Method
-from .types.speech import SPEECH_CONTENT_TYPE_KEY, SPEECH_REQUEST_CHARACTERS_KEY, SPEECH_AUDIO_STREAM_KEY
-from .utils import json, case
-from .utils.credentials import get_credentials
-from .utils.exceptions import get_exception, ResponseTypeException, JSONDecodeException, AioHTTPException
-from .utils.mixins import ContextInstanceMixin
+from ..types import ContentType
+from ..types.enums import AUDIO_CONTENT_TYPES
+from ..types.method import Method
+from ..types.speech import SPEECH_CONTENT_TYPE_KEY, SPEECH_REQUEST_CHARACTERS_KEY, SPEECH_AUDIO_STREAM_KEY
+from ..utils import json, case
+from ..utils.credentials import get_credentials
+from ..utils.exceptions import get_exception, ResponseTypeException, JSONDecodeException, AioHTTPException
+from ..utils.mixins import ContextInstanceMixin
 
 log = logging.getLogger('aiopolly')
 
@@ -32,7 +32,7 @@ RETURN_RAW_RESPONSE = False
 LOAD_STREAM_ENABLED = True
 
 
-class BaseApiClient(ContextInstanceMixin):
+class AmazonAPIClient(ContextInstanceMixin):
     _service_name = SERVICE_NAME
     _default_region = DEFAULT_REGION
     _base_url_template = BASE_URL_TEMPLATE
