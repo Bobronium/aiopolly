@@ -4,13 +4,12 @@ from typing import Union, List
 import botocore
 from botocore.credentials import Credentials
 
+import aiopolly.types.enums
+from aiopolly.types.enums import AUDIO_CONTENT_TYPES
 from . import types
-from .base import BasePolly
-from .types.content_type import AUDIO_CONTENT_TYPES
+from .base import BaseApiClient
 from .utils.lexicon import LexiconTemplate
 from .utils.payload import generate_params
-
-TRUST_API_RESPONSES = True
 
 
 class Methods:
@@ -64,7 +63,7 @@ class Methods:
     )
 
 
-class Polly(BasePolly):
+class Polly(BaseApiClient):
     """
     You can init this class using one of three methods of authorisation:
         1) Provide prepared botocore.credentials.Credentials instance
@@ -78,7 +77,6 @@ class Polly(BasePolly):
     """
 
     methods = Methods
-    trust_api_responses = TRUST_API_RESPONSES
 
     def __init__(self,
                  voice_id: str = None,
@@ -143,18 +141,47 @@ class Polly(BasePolly):
             setattr(self, k, v)
 
     async def delete_lexicon(self, lexicon_name: str) -> None:
+        """
+        Deletes the specified pronunciation lexicon stored in an AWS Region.
+        A lexicon which has been deleted is not available for speech synthesis,
+        nor is it possible to retrieve it using either the GetLexicon or ListLexicon APIs.
+
+        See: https://docs.aws.amazon.com/en_us/polly/latest/dg/API_DeleteLexicon.html
+
+        :param lexicon_name: The name of the lexicon to delete. Must be an existing lexicon in the region.
+        """
         params = generate_params(lexicon_name=lexicon_name)
 
         await self.request(self.methods.DeleteLexicon, params=params)
 
     async def describe_voices(self, include_additional_language_codes: bool = None,
                               language_code: str = None, next_token: str = None) -> types.VoicesList:
+        """
+        Returns the list of voices that are available for use when requesting speech synthesis.
+        Each voice speaks a specified language, is either male or female, and is identified by an ID,
+        which is the ASCII version of the voice name.
+
+        See: https://docs.aws.amazon.com/en_us/polly/latest/dg/API_DescribeVoices.html
+
+        :param include_additional_language_codes: Boolean value indicating whether to return any bilingual voices
+               that use the specified language as an additional language.
+        :param language_code: The language identification tag for filtering the list of voices returned.
+        :param next_token: An opaque pagination token returned from the previous DescribeVoices operation.
+        """
         params = generate_params(**locals(), defaults=self.__dict__)
         result = await self.request(self.methods.DescribeVoices, params=params)
 
         return types.VoicesList(**result)
 
     async def get_lexicon(self, lexicon_name: str) -> types.Lexicon:
+        """
+        Returns the content of the specified pronunciation lexicon stored in an AWS Region.
+
+        See: https://docs.aws.amazon.com/en_us/polly/latest/dg/API_GetLexicon.html
+
+        :param lexicon_name: Name of the lexicon.
+        """
+
         method = self.methods.GetLexicon
         params = generate_params(lexicon_name=lexicon_name)
         result = await self.request(method, params=params)
@@ -163,6 +190,16 @@ class Polly(BasePolly):
         return types.Lexicon(**result[method.lexicon_key], attributes=lexicon_attributes)
 
     async def get_speech_synthesis_task(self, task_id: str) -> types.SynthesisTask:
+        """
+        Retrieves a specific SpeechSynthesisTask object based on its TaskID.
+        This object contains information about the given speech synthesis task,
+        including the status of the task, and a link to the S3 bucket containing the output of the task.
+
+        See: https://docs.aws.amazon.com/en_us/polly/latest/dg/API_GetSpeechSynthesisTask.html
+
+        :param task_id: The Amazon Polly generated identifier for a speech synthesis task.
+        """
+
         method = self.methods.GetSpeechSynthesisTask
         params = generate_params(task_id=task_id)
         result = await self.request(self.methods.GetSpeechSynthesisTask, params=params)
@@ -170,6 +207,15 @@ class Polly(BasePolly):
         return types.SynthesisTask(**result[method.synthesis_task_key])
 
     async def list_lexicons(self, next_token: str = None) -> types.LexiconsList:
+        """
+        Returns a list of pronunciation lexicons stored in an AWS Region.
+
+        See: https://docs.aws.amazon.com/en_us/polly/latest/dg/API_ListLexicons.html
+
+        :param next_token: An opaque pagination token returned from previous ListLexicons operation.
+               If present, indicates where to continue the list of lexicons.
+        """
+
         params = generate_params(next_token=next_token)
         result = await self.request(self.methods.ListLexicons, params=params)
 
@@ -178,12 +224,35 @@ class Polly(BasePolly):
     async def list_speech_synthesis_tasks(self, max_results: int = None,
                                           next_token: str = None,
                                           status: str = None) -> types.SynthesisTasksList:
+        """
+        Returns a list of SpeechSynthesisTask objects ordered by their creation date.
+        This operation can filter the tasks by their status, for example,
+        allowing users to list only tasks that are completed.
+
+        See: https://docs.aws.amazon.com/en_us/polly/latest/dg/API_ListSpeechSynthesisTasks.html
+
+        :param max_results: Maximum number of speech synthesis tasks returned in a List operation. (1-100)
+        :param next_token: The pagination token to use in the next request to continue the listing
+        :param status: Status of the speech synthesis tasks returned in a List operation
+        """
+
         params = generate_params(**locals())
         result = await self.request(self.methods.ListSpeechSynthesisTasks, params=params)
 
         return types.SynthesisTasksList(**result)
 
     async def put_lexicon(self, lexicon_name: str, content: Union[str, LexiconTemplate]):
+        """
+        Stores a pronunciation lexicon in an AWS Region.
+        If a lexicon with the same name already exists in the region, it is overwritten by the new lexicon.
+        Lexicon operations have eventual consistency, therefore, it might take some time
+        before the lexicon is available to the SynthesizeSpeech operation.
+
+        :param lexicon_name: Name of the lexicon. The name must follow the regular express format [0-9A-Za-z]{1,20}.
+               That is, the name is a case-sensitive alphanumeric string up to 20 characters long.
+        :param content: Content of the PLS lexicon as string data.
+        """
+
         if hasattr(content, 'to_str'):
             content = content.to_str()
 
@@ -198,25 +267,64 @@ class Polly(BasePolly):
                                           voice_id: str = None,
                                           output_format: str = None,
                                           sample_rate: str = None,
-                                          speech_mark_type: str = None,
+                                          speech_mark_types: str = None,
                                           text_type: str = None,
                                           language_code: str = None,
                                           lexicon_names: str = None,
                                           ) -> types.SynthesisTask:
+        """
+        Allows the creation of an asynchronous synthesis task, by starting a new SpeechSynthesisTask.
+        This operation requires all the standard information needed for speech synthesis,
+        plus the name of an Amazon S3 bucket for the service to store the output of the synthesis task
+        and two optional parameters (OutputS3KeyPrefix and SnsTopicArn). Once the synthesis task is created,
+        this operation will return a SpeechSynthesisTask object, which will include an identifier of this task
+        as well as the current status.
+
+        :param text: The input text to synthesize.
+        :param output_s3_key_prefix: The Amazon S3 key prefix for the output speech file.
+        :param output_s3_bucket_name: Amazon S3 bucket name to which the output file will be saved.
+        :param voice_id: Voice ID to use for the synthesis.
+        :param output_format: The format in which the returned output will be encoded.
+        :param sample_rate: The audio frequency specified in Hz.
+        :param speech_mark_types: The type of speech marks returned for the input text.
+        :param text_type: Specifies whether the input text is plain text or SSML. The default value is plain text.
+        :param language_code: Optional language code for the Synthesize Speech request.
+        :param lexicon_names: List of one or more pronunciation lexicon names to apply during synthesis
+        :return:
+        """
+
         payload = generate_params(**locals(), defaults=self.__dict__)
         result = await self.request(self.methods.StartSpeechSynthesisTask, payload=payload)
         return types.SynthesisTask(**result)
 
     async def synthesize_speech(self, text: str,
                                 voice_id: str = None,
-                                output_format: str = None,
+                                output_format: Union[aiopolly.types.enums.AudioFormat, str] = None,
                                 sample_rate: str = None,
-                                speech_mark_type: str = None,
-                                text_type: str = None,
-                                language_code: str = None,
+                                speech_mark_types: List[Union[aiopolly.types.enums.SpeechMarkTypes, str]] = None,
+                                text_type: Union[aiopolly.types.enums.TextType, str] = None,
+                                language_code: Union[aiopolly.types.enums.LanguageCode, str] = None,
                                 lexicon_names: list = None,
-                                ) -> types.Speech:
+                                ) -> Union[types.Speech, types.SpeechMarksList]:
+        """
+        Synthesizes UTF-8 input, plain text or SSML, to a stream of bytes. SSML input must be valid, well-formed SSML.
+        Some alphabets might not be available with all the voices
+        (for example, Cyrillic might not be read at all by English voices) unless phoneme mapping is used.
+
+        :param text: Input text to synthesize.
+        :param voice_id: Voice ID to use for the synthesis.
+        :param output_format: The format in which the returned output will be encoded.
+        :param sample_rate: The audio frequency specified in Hz.
+        :param speech_mark_types: The type of speech marks returned for the input text.
+        :param text_type: Specifies whether the input text is plain text or SSML. The default value is plain text.
+        :param language_code: Optional language code for the Synthesize Speech request.
+        :param lexicon_names: List of one or more pronunciation lexicon names to apply during synthesis
+        """
+
         payload = generate_params(**locals(), defaults=self.__dict__)
         result = await self.request(self.methods.SynthesizeSpeech, payload=payload)
+
+        if (output_format or self.output_format) == aiopolly.types.enums.AudioFormat.json:
+            return types.SpeechMarksList(speech_marks=result)
 
         return types.Speech(**result)

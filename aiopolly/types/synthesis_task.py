@@ -1,18 +1,10 @@
 import datetime
-from enum import Enum
 from typing import List
 
 from .base import BasePollyObject
-from .content_type import AudioFormat
+from .enums import AudioFormat
 
-__all__ = ['SynthesisTask', 'SynthesisTasksList', 'SynthesisTaskStatus']
-
-
-class SynthesisTaskStatus(str, Enum):
-    scheduled = 'scheduled'
-    in_progress = 'inProgress'
-    completed = 'completed'
-    failed = 'failed'
+__all__ = ['SynthesisTask', 'SynthesisTasksList']
 
 
 class SynthesisTask(BasePollyObject):

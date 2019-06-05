@@ -6,7 +6,7 @@ from urllib.parse import urlencode
 from pydantic import validator
 
 from .base import BasePollyObject
-from .content_type import ContentType
+from .enums import ContentType
 from ..utils.case import to_snake, string_to_snake
 
 __all__ = ['Method']

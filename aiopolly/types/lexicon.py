@@ -1,16 +1,10 @@
 import datetime
-from enum import Enum
 from typing import List
 
 from .base import BasePollyObject
-from .language_code import LanguageCode
+from .enums import LanguageCode, Alphabet
 
-__all__ = ['Alphabet', 'LexiconAttribute', 'Lexicon', 'LexiconsList']
-
-
-class Alphabet(Enum):
-    ipa: str = 'ipa'
-    x_sampa: str = 'x-sampa'
+__all__ = ['LexiconAttribute', 'Lexicon', 'LexiconsList']
 
 
 class LexiconAttribute(BasePollyObject):

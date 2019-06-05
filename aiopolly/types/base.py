@@ -28,7 +28,15 @@ class BasePollyObject(BaseModel):
         object.__setattr__(self, '__fields_set__', fields_set)
 
         if error:
-            log.exception('Got unexpected params in API response:', exc_info=error)
+            try:
+                trust_api_responses = self.polly._trust_api_responses
+            except RuntimeError:
+                trust_api_responses = True
+
+            if trust_api_responses:
+                log.exception('Got unexpected params in API response:', exc_info=error)
+            else:
+                raise error
 
     def dict(self, *,
              use_camel_case: bool = False,

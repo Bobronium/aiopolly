@@ -1,23 +1,17 @@
 import asyncio
-from enum import Enum
-from typing import List
+from typing import List, Union
 
 from .base import BasePollyObject
-from .language_code import LanguageCode
-from .speech import Speech
+from .enums import Gender, VoiceID, LanguageCode, SpeechMarkTypes
+from .speech import Speech, SpeechMarksList
 
-__all__ = ['Gender', 'Voice', 'VoicesList']
-
-
-class Gender(Enum):
-    female = 'Female'
-    male = 'Male'
+__all__ = ['Voice', 'VoicesList']
 
 
 class Voice(BasePollyObject):
     additional_language_codes: List[str] = None
     gender: Gender
-    id: str
+    id: VoiceID
     language_code: LanguageCode
     language_name: str
     name: str
@@ -25,16 +19,16 @@ class Voice(BasePollyObject):
     async def synthesize_speech(self, text: str,
                                 output_format: str = None,
                                 sample_rate: str = None,
-                                speech_mark_type: str = None,
+                                speech_mark_types: str = None,
                                 text_type: str = None,
                                 language_code: str = None,
                                 lexicon_names: str = None,
-                                ) -> Speech:
+                                ) -> Union[Speech, SpeechMarksList]:
         return await self.polly.synthesize_speech(text=text,
                                                   voice_id=self.id,
                                                   output_format=output_format,
                                                   sample_rate=sample_rate,
-                                                  speech_mark_type=speech_mark_type,
+                                                  speech_mark_types=speech_mark_types,
                                                   text_type=text_type,
                                                   language_code=language_code,
                                                   lexicon_names=lexicon_names)
@@ -54,17 +48,17 @@ class VoicesList(BasePollyObject):
     async def synthesize_speech(self, text: str,
                                 output_format: str = None,
                                 sample_rate: str = None,
-                                speech_mark_type: str = None,
+                                speech_mark_types: List[Union[SpeechMarkTypes, str]] = None,
                                 text_type: str = None,
                                 language_code: str = None,
                                 lexicon_names: str = None,
-                                ) -> List[Speech]:
+                                ) -> Union[List[Speech], List[SpeechMarksList]]:
         return await asyncio.gather(
             *(
                 voice.synthesize_speech(text=text,
                                         output_format=output_format,
                                         sample_rate=sample_rate,
-                                        speech_mark_type=speech_mark_type,
+                                        speech_mark_types=speech_mark_types,
                                         text_type=text_type,
                                         language_code=language_code,
                                         lexicon_names=lexicon_names)

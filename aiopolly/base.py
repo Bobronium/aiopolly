@@ -9,29 +9,41 @@ import certifi
 from botocore.auth import SigV4Auth
 from botocore.awsrequest import AWSRequest
 
-from aiopolly.utils import exceptions
-from aiopolly.utils.exceptions import EXCEPTIONS
-from .types.content_type import AUDIO_CONTENT_TYPES
-from .types.method import ContentType, Method
+from .types import ContentType
+from .types.enums import AUDIO_CONTENT_TYPES
+from .types.method import Method
+from .types.speech import SPEECH_CONTENT_TYPE_KEY, SPEECH_REQUEST_CHARACTERS_KEY, SPEECH_AUDIO_STREAM_KEY
 from .utils import json, case
 from .utils.credentials import get_credentials
+from .utils.exceptions import get_exception, ResponseTypeException, JSONDecodeException, AioHTTPException
 from .utils.mixins import ContextInstanceMixin
+
+log = logging.getLogger('aiopolly')
 
 SERVICE_NAME = 'polly'
 DEFAULT_REGION = 'eu-central-1'
 BASE_URL_TEMPLATE = 'https://{service_name}.{region}.amazonaws.com/v1'
 
 CHARACTERS_HEADER = 'x-amzn-RequestCharacters'
+EXCEPTION_HEADER = 'x-amzn-ErrorType'
 
-log = logging.getLogger('aiopolly')
+TRUST_API_RESPONSES = False
+RETURN_RAW_RESPONSE = False
+LOAD_STREAM_ENABLED = True
 
 
-class BasePolly(ContextInstanceMixin):
+class BaseApiClient(ContextInstanceMixin):
+    _service_name = SERVICE_NAME
+    _default_region = DEFAULT_REGION
+    _base_url_template = BASE_URL_TEMPLATE
+
+    _trust_api_responses = TRUST_API_RESPONSES
+    _return_raw_response = RETURN_RAW_RESPONSE
+    _load_stream_enabled = LOAD_STREAM_ENABLED
 
     def __init__(self, credentials, access_key, secret_key, region, loop):
-        self.region = region or DEFAULT_REGION
-        self.service_name = SERVICE_NAME
-        self.base_url = BASE_URL_TEMPLATE.format(service_name=self.service_name, region=self.region)
+        self.region = region or self._default_region
+        self.base_url = self._base_url_template.format(service_name=self._service_name, region=self.region)
 
         self.__credentials = get_credentials(credentials, access_key, secret_key)
         self.__signer = SigV4Auth(credentials=self.__credentials, service_name=SERVICE_NAME, region_name=self.region)
@@ -64,57 +76,77 @@ class BasePolly(ContextInstanceMixin):
         headers = self.__get_signed_headers(url, request_method, payload_json)
 
         try:
-            async with self.session.request(method=request_method, url=url, data=payload_json,
-                                            headers=headers) as response:
-                result = await self.get_result(url, method, params, payload, response)
+            async with self.session.request(
+                    method=request_method, url=url, data=payload_json, headers=headers) as response:
+                result = await self.get_result(url, method, payload, response)
         except aiohttp.ClientError as e:
-            raise exceptions.AioHTTPException(url=url, cause=e)
+            raise AioHTTPException(url=url, payload=payload, cause=e)
 
         return result
 
-    @staticmethod
-    async def get_result(url, method, params, payload, response):
+    async def get_result(self, url: str, method: Method, payload: dict, response: aiohttp.ClientResponse):
+        if self._return_raw_response:
+            return response
+
         if response.content_type == ContentType.application_json:
-            try:
-                result = await response.json()
-            except ValueError as e:
-                raise exceptions.JSONDecodeException(url=url, response=await response.text(), cause=e)
-            result = case.to_snake(result)
+            result = self.get_json(url, payload, response)
+
+        elif response.content_type == ContentType.audio_json:
+            result = self.get_speech_marks(response)
 
         elif response.content_type in AUDIO_CONTENT_TYPES:
-            result = {
-                'content_type': response.content_type,
-                'request_characters': response.headers[CHARACTERS_HEADER],
-                'audio_stream': await response.read()
-            }
-            result.update(case.to_snake(payload))
-
-        elif method.no_data_on_success:
-            result = None
+            result = self.get_speech(response, payload)
 
         else:
-            result = await response.text()
+            result = response
 
-        log.debug('Response for "%s": [%d] "%r"', url, response.status, str(result)[:1000])
+        log.debug('Response for "%s": [%d] "%r"', url, response.status, str(result)[:3000])
 
-        if HTTPStatus.OK <= response.status <= HTTPStatus.IM_USED:
-            if not method.no_data_on_success and response.content_type not in method.expected_content_types:
-                raise exceptions.ResponseTypeException(url=url, response=result)
+        if response.status not in range(HTTPStatus.OK, HTTPStatus.BAD_REQUEST):
+            self.raise_api_exception(url, payload, response, result)
 
-            return result
+        if not method.no_data_on_success and response.content_type not in method.expected_content_types:
+            raise ResponseTypeException(url=url, payload=payload, response=response, result=result)
 
+        return result
+
+    def get_speech(self, response, payload):
+        result = {
+            SPEECH_CONTENT_TYPE_KEY: response.content_type,
+            SPEECH_REQUEST_CHARACTERS_KEY: response.headers[CHARACTERS_HEADER],
+            SPEECH_AUDIO_STREAM_KEY: await response.read() if self._load_stream_enabled else response
+        }
+        result.update(case.to_snake(payload))
+        return result
+
+    @staticmethod
+    def get_speech_marks(response):
+        result = await response.content.read()
+        return [json.loads(line) for line in result.split(b'\n')[:-1]]
+
+    @staticmethod
+    def raise_api_exception(url, payload, response, result):
         if response.content_type == ContentType.application_json:
             error_message = result.get('message')
-            match_exception = next((exc for exc in EXCEPTIONS if exc.msg in error_message), None) \
-                if error_message else None
-
-            if match_exception:
-                raise match_exception(error_message, url=url)
-
-        if result is None:
+        elif result:
+            error_message = result
+        else:
             try:
-                result = await response.text()
+                error_message = await response.text()
             except ValueError:
-                result = await response.read()
+                error_message = await response.read()
 
-        raise exceptions.PollyAPIException(f'Bad API response [{response.status}]', url=url, response=result)
+        api_exception = get_exception(
+            response.headers.get(EXCEPTION_HEADER),
+            response.status,
+            error_message
+        )
+        raise api_exception(url=url, payload=payload, result=result, response=response)
+
+    @staticmethod
+    def get_json(url, payload, response):
+        try:
+            result = await response.json()
+        except ValueError as e:
+            raise JSONDecodeException(url=url, payload=payload, response=await response.text(), cause=e)
+        return case.to_snake(result)
