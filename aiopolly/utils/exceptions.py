@@ -1,5 +1,7 @@
 from typing import ClassVar, Union
 
+from aiohttp import ClientResponse
+
 
 class BasePollyException(Exception):
     msg = 'Exception occurred'
@@ -7,20 +9,24 @@ class BasePollyException(Exception):
     def __init__(self,
                  message: str = None,
                  url: str = None,
-                 response: Union[dict, str] = None,
+                 payload: str = None,
+                 response: Union[dict, str, ClientResponse] = None,
                  cause: ClassVar[Exception] = None):
 
         if not message:
             message = self.msg
-        if url:
-            message += f', request: {url}'
-            if response:
-                message += f', response: {response}'
-        if cause:
-            message += f'. Caused by {cause.__class__.__name__}: {cause}'
+        if url is not None:
+            message += f'\n\nRequest url: {url}'
+        if payload is not None:
+            message += f'\n\nPayload: {payload}'
+        if response is not None:
+            message += f'\n\nResponse: {response}'
+        if cause is not None:
+            message += f'\n\nCaused by: {cause.__class__.__name__}: {cause}'
 
         super().__init__(message)
         self.url = url
+        self.payload = payload
         self.response = response
         self.cause = cause
 
@@ -164,6 +170,10 @@ class UnsupportedPLSLanguageException(BasePollyException):
 
 class ResponseValueException(BasePollyException):
     msg = 'API send response with unexpected values'
+
+
+class InvalidSSMLRequestException(BasePollyException):
+    msg = 'Invalid SSML request'
 
 
 EXCEPTIONS = set()
