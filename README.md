@@ -1,15 +1,16 @@
 # aiopolly
 [![Python 3.7](https://img.shields.io/badge/Python%203.7-blue.svg)](https://python.org) 
+[![PyPi Package Version](https://img.shields.io/pypi/v/aiopolly.svg)](https://pypi.python.org/pypi/aiopolly)
 [![Amazon Polly API](https://img.shields.io/badge/-Amazon%20Polly%20API-orange.svg?logo=amazon&labelColor=gray)](https://docs.aws.amazon.com/en_us/polly/latest/dg/what-is.html)
 
-Asynchronous client for Amazon Polly API which is written with asyncio and aiohttp and uses pydantic models
+aiopolly is an asynchronous library for [Amazon Polly API](https://docs.aws.amazon.com/en_us/polly/latest/dg/API_Reference.html) which is written with [asyncio](https://docs.python.org/3/library/asyncio.html) and [aiohttp](https://github.com/aio-libs/aiohttp) and uses [asyncio](https://docs.python.org/3/library/asyncio.html) and uses [pydantic](https://github.com/samuelcolvin/pydantic) models
  
 # Features
 - Asynchronous
 - Respects PEP-8 (no camelCase args and vars)
 - Provides easy way to work with SSML tags and lexicons
-- Has a audio convert support and built-in async opus converter
 - Has mapped and classified AWS API exceptions
+- Has audio convert support and built-in async opus converter
 
 # Installation
 ```bash
@@ -92,23 +93,23 @@ async def main():
     # Creating a new Polly instance with default output format 'mp3'
     polly = Polly(output_format=AudioFormat.mp3)
 
+    text = 'Python is a beautiful programming language which is commonly used for web backend and ML. ' \
+           'It also has cool style guides listed in PEP-8, and many community libraries like aiopolly or aiogram.'
 
-    # Creating some lexemes
+    # Creating new lexemes
     python_lexemes = [
         new_lexeme(grapheme='PEP', alias='Python Enhancement Proposals'),
         new_lexeme(grapheme='ML', alias='Machine Learning'),
         new_lexeme(grapheme='aiopolly', phoneme='eɪˈaɪoʊˈpɑli'),
         new_lexeme(grapheme='aiogram', phoneme='eɪˈaɪoʊˌgræm')
     ]
+    
     # Creating a new lexicon with 'ipa' alphabet and 'en_US' language code
     lexicon = new_lexicon(alphabet=Alphabet.ipa, lang=LanguageCode.en_us, lexemes=python_lexemes)
 
     # Putting lexicon on Amazon server
     lexicon_name = 'PythonML'
     await polly.put_lexicon(lexicon_name=lexicon_name, content=lexicon)
-
-    text = 'Python is a beautiful programming language which is commonly used for web backend and ML. ' \
-           'It also has cool style guides listed in PEP-8, and many community libraries like aiopolly or aiogram.'
 
     # Synthesizing speech with lexicon we just created 
     # (we don't need to specify required param "output_format", as we using it by default)
@@ -172,7 +173,7 @@ polly = Polly(
     sample_rate='16000',
     speech_mark_types=['ssml'],
     text_type=types.TextType.ssml,
-    language_code=types.LanguageCode.en_us,
+    language_code=types.LanguageCode.en_US,
     lexicon_names=['myLexicon', 'alsoMyLexicon'],
     output_s3_key_prefix='s3_key_prefix',
     output_s3_bucket_name='s3_bucket_name',
@@ -185,6 +186,7 @@ polly = Polly(
 - Test Synthesis tasks (not tested yet)
 - Write tests
 - Get rid of botocore (built-in request signer needed)
+- Work on converter API?
 - More docs?
 
 
