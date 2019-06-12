@@ -3,7 +3,7 @@
 [![PyPi Package Version](https://img.shields.io/pypi/v/aiopolly.svg)](https://pypi.python.org/pypi/aiopolly)
 [![Amazon Polly API](https://img.shields.io/badge/-Amazon%20Polly%20API-orange.svg?logo=amazon&labelColor=gray)](https://docs.aws.amazon.com/en_us/polly/latest/dg/what-is.html)
 
-aiopolly is an asynchronous library for [Amazon Polly API](https://docs.aws.amazon.com/en_us/polly/latest/dg/API_Reference.html) which is written with [asyncio](https://docs.python.org/3/library/asyncio.html) and [aiohttp](https://github.com/aio-libs/aiohttp) and uses [asyncio](https://docs.python.org/3/library/asyncio.html) and uses [pydantic](https://github.com/samuelcolvin/pydantic) models
+aiopolly is an asynchronous library for [Amazon Polly API](https://docs.aws.amazon.com/en_us/polly/latest/dg/API_Reference.html) which is written with [asyncio](https://docs.python.org/3/library/asyncio.html) and [aiohttp](https://github.com/aio-libs/aiohttp) and uses [pydantic](https://github.com/samuelcolvin/pydantic) models
  
 # Features
 - Asynchronous
