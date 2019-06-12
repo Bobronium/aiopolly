@@ -12,5 +12,5 @@ __all__ = [
     'utils'
 ]
 
-__version__ = '0.1.0'
+__version__ = '0.1.1'
 __api_date__ = datetime.date(2018, 8, 2)  # August 2, 2018

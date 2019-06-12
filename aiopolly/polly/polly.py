@@ -2,7 +2,7 @@ import asyncio
 from typing import Union, List
 
 from . import api
-from .. import config
+from . import config
 from .. import types
 from ..utils import case, json
 from ..utils.converter.base import BaseConverter

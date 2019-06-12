@@ -9,7 +9,7 @@ import certifi
 from botocore.auth import SigV4Auth
 from botocore.awsrequest import AWSRequest
 
-from .. import config
+from . import config
 from ..types import ContentType
 from ..types.method import Method
 from ..utils import json, case
