@@ -41,18 +41,15 @@ def make_params(mapping: dict = None,
     elif isinstance(exclude, list):
         exclude.extend(DEFAULT_EXCLUDE)
 
-    if allowed is None:
-        allowed = params
-
     if mapping is None:
         mapping = {}
 
     return ' '.join(
-        f'{mapping.get(key, key)}="{value.value if isinstance(value, Enum) else value}"'
+        f'{mapping.get(key, key)}="{value}"'
         for key, value in params.items()
         if value is not None
         and key not in exclude
-        and key in allowed
+        and (allowed is None or key in allowed)
     )
 
 

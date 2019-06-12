@@ -1,9 +1,9 @@
 """
 See documentation: https://docs.aws.amazon.com/en_us/polly/latest/dg/supported-ssml.html
 """
-from enum import Enum
 
 from ...types import Alphabet
+from ...types.enums import StrEnum
 
 __all__ = [
     'Alphabet',
@@ -19,7 +19,7 @@ __all__ = [
 ]
 
 
-class Level(str, Enum):
+class Level(StrEnum):
     """
     :enum Strong: Increases the volume and slows the speaking rate so that the speech is louder and slower.
     :enum Moderate: Increases the volume and slows the speaking rate, but less than strong. Moderate is the default.
@@ -30,7 +30,7 @@ class Level(str, Enum):
     reduced = 'reduced'
 
 
-class Strength(str, Enum):
+class Strength(StrEnum):
     """
     :enum none: No pause. Use none to remove a normally occurring pause, such as after a period.
     :enum x-weak: Has the same strength as none, no pause.
@@ -47,7 +47,7 @@ class Strength(str, Enum):
     x_strong = 'x-strong'
 
 
-class Volume(str, Enum):
+class Volume(StrEnum):
     """
     :enum default: Resets volume to the default level for the current voice.
     :enums: silent, x-soft, soft, medium, loud, x-loud: Sets the volume to a predefined value for the current voice.
@@ -61,7 +61,7 @@ class Volume(str, Enum):
     x_loud = 'x-loud'
 
 
-class Rate(str, Enum):
+class Rate(StrEnum):
     """
     :enums: x-slow, slow, medium, fast,x-fast. Sets the pitch to a predefined value for the selected voice.
     """
@@ -72,7 +72,7 @@ class Rate(str, Enum):
     x_fast = 'x-fast'
 
 
-class Pitch(str, Enum):
+class Pitch(StrEnum):
     """
     :enum default: Resets pitch to the default level for the current voice.
     :enums x-low, low, medium, high, x-high: Sets the pitch to a predefined value for the current voice.
@@ -85,7 +85,7 @@ class Pitch(str, Enum):
     x_high = 'x-high'
 
 
-class Interpretation(str, Enum):
+class Interpretation(StrEnum):
     """
     :enum characters or spell-out: Spells out each letter of the text, as in a-b-c.
     :enum cardinal or number: Interprets the numerical text as a cardinal number, as in 1,234.
@@ -114,7 +114,7 @@ class Interpretation(str, Enum):
     telephone = 'telephone'
 
 
-class DateFormat(str, Enum):
+class DateFormat(StrEnum):
     """
     :enum mdy: Month-day-year.
     :enum dmy: Day-month-year.
@@ -142,7 +142,7 @@ class DateFormat(str, Enum):
     yyyymmdd = 'yyyymmdd'
 
 
-class Frequency(str, Enum):
+class Frequency(StrEnum):
     """Controls how often breathing sounds occur in the text."""
     default = 'default'
     x_low = 'x-low'
@@ -152,7 +152,7 @@ class Frequency(str, Enum):
     x_high = 'x-high'
 
 
-class Duration(str, Enum):
+class Duration(StrEnum):
     """Controls the length of the breath."""
     default = 'default'
     x_low = 'x-short'
@@ -162,7 +162,7 @@ class Duration(str, Enum):
     x_high = 'x-long'
 
 
-class SpeechPart(str, Enum):
+class SpeechPart(StrEnum):
     """
     :enum amazon:VB: interprets the word as a verb (present simple).
     :enum: amazon:VBD: interprets the word as past tense or as a past participle.

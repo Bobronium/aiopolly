@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Optional
+from typing import Optional, List
 
 __all__ = [
     'Alphabet',
@@ -9,32 +9,69 @@ __all__ = [
     'LanguageCode',
     'Region',
     'SpeechMarkTypes',
+    'StrEnum',
     'SynthesisTaskStatus',
     'TextType',
     'VoiceID',
 ]
 
 
-class TextType(str, Enum):
+class StrEnum(str, Enum):
+    def __str__(self):
+        return self.value
+
+    def __contains__(self, other):
+        if isinstance(other, self.__class__):
+            other = other.value
+        return self.value == other
+
+    @classmethod
+    def search(cls, contain: str = None,
+               startswith: str = None,
+               endswith: str = None,
+               contained: str = None) -> List['StrEnum']:
+        """
+        :param contain: search all enum members which are contain some substring
+        :param startswith: search all enum members which are start with some substring
+        :param endswith: search all enum members which are end with some substring
+        :param contained: search all enum members which are substrings of some string
+
+        :return: all found enums
+        """
+
+        found = set()
+        if contain:
+            found.update(e for e in cls if contain in e.value)
+        if startswith:
+            found.update(e for e in cls if e.value.startswith(startswith))
+        if endswith:
+            found.update(e for e in cls if e.value.endswith(endswith))
+        if contained:
+            found.update(e for e in cls if e.value in contained)
+
+        return list(found)
+
+
+class TextType(StrEnum):
     text = 'text'
     ssml = 'ssml'
 
 
-class SpeechMarkTypes(str, Enum):
+class SpeechMarkTypes(StrEnum):
     ssml = 'ssml'
     sentence = 'sentence'
     viseme = 'viseme'
     word = 'word'
 
 
-class SynthesisTaskStatus(str, Enum):
+class SynthesisTaskStatus(StrEnum):
     scheduled = 'scheduled'
     in_progress = 'inProgress'
     completed = 'completed'
     failed = 'failed'
 
 
-class Alphabet(str, Enum):
+class Alphabet(StrEnum):
     ipa: str = 'ipa'
     x_sampa: str = 'x-sampa'
     x_amazon_pinyin: str = 'x-amazon-pinyin'
@@ -45,14 +82,14 @@ class Gender(Enum):
     male = 'Male'
 
 
-class AudioFormat(str, Enum):
+class AudioFormat(StrEnum):
     json = 'json'
     mp3 = 'mp3'
     pcm = 'pcm'
     ogg_vorbis = 'ogg_vorbis'
 
 
-class ContentType(str, Enum):
+class ContentType(StrEnum):
     application_json = 'application/json'
     application_octet_stream = 'application/octet-stream'
     audio_json = 'application/x-json-stream'
@@ -65,7 +102,7 @@ class ContentType(str, Enum):
         return AUDIO_CONTENT_TYPE_FORMAT_MAPPING.get(self)
 
 
-class Region(str, Enum):
+class Region(StrEnum):
     us_east_2 = 'us-east-2'
     us_east_1 = 'us-east-1'
     us_west_1 = 'us-west-1'
@@ -85,7 +122,7 @@ class Region(str, Enum):
     sa_east_1 = 'sa-east-1'
 
 
-class LanguageCode(str, Enum):
+class LanguageCode(StrEnum):
     arb = 'arb'
     cmn_CN = 'cmn-CN'
     cy_GB = 'cy-GB'
@@ -117,7 +154,7 @@ class LanguageCode(str, Enum):
     tr_TR = 'tr-TR'
 
 
-class VoiceID(str, Enum):
+class VoiceID(StrEnum):
     Aditi = 'Aditi'
     Amy = 'Amy'
     Astrid = 'Astrid'
