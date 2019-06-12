@@ -64,7 +64,7 @@ async def main():
     text = 'Whatever you can do I can override it, got a million ways to synthesize it'
     
     # Asynchronously synthesizing text with all available voices
-    synthesized = await voices.synthesize_speech(text, language_code=types.LanguageCode.en_us)
+    synthesized = await voices.synthesize_speech(text, language_code=types.LanguageCode.en_US)
 
     # Asynchronously saving each synthesized audio on disk
     await asyncio.gather(
@@ -105,7 +105,7 @@ async def main():
     ]
     
     # Creating a new lexicon with 'ipa' alphabet and 'en_US' language code
-    lexicon = new_lexicon(alphabet=Alphabet.ipa, lang=LanguageCode.en_us, lexemes=python_lexemes)
+    lexicon = new_lexicon(alphabet=Alphabet.ipa, lang=LanguageCode.en_US, lexemes=python_lexemes)
 
     # Putting lexicon on Amazon server
     lexicon_name = 'PythonML'
@@ -180,6 +180,48 @@ polly = Polly(
     include_additional_language_codes=True,
     **{'other_default_param': 'value'}
 )
+```
+
+## Using built-in OpusConverter
+For this to work you need ffmpeg and libopus installed on your system
+
+```python
+import asyncio
+
+from aiopolly import Polly
+from aiopolly.types import AudioFormat, TextType, VoiceID
+from aiopolly.utils.converter import OpusConverter
+from aiopolly.utils.ssml import ssml_text, pause, Strength
+
+
+async def main():
+    converter = OpusConverter(auto_convert=True, keep_original=True)
+    polly = Polly(output_format=AudioFormat.mp3, converter=converter)
+
+    text = ssml_text(f'''
+sendVoice
+
+Use this method to send audio files, if you want Telegram clients to display the file as a playable voice message. 
+For this to work, your audio must be in an {pause(Strength.none)}.ogg file encoded with OPUS 
+(other formats may be sent as Audio or Document)
+''')
+
+    # Synthesizing speech with lexicon we just created
+    # (we don't need to specify required param "output_format", as we using mp3 by default)
+    speech = await polly.synthesize_speech(
+        text,
+        voice_id=VoiceID.Matthew,
+        lexicon_names=['PythonML'],
+        text_type=TextType.ssml
+    )
+
+    # Saving speech on disk with default name
+    await speech.save_on_disc(directory='speech')
+    await speech.save_on_disc(directory='speech', converted=False)
+
+
+loop = asyncio.get_event_loop()
+loop.run_until_complete(main())
 ```
 
 # To-Do:
