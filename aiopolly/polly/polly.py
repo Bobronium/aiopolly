@@ -62,11 +62,9 @@ class Methods:
 
 class Polly(api.AmazonAPIClient):
     """
-    You can init this class using one of three methods of authorisation:
-        1) Provide prepared botocore.credentials.Credentials instance
-        2) Use your access and secret keys with optional params,
-        3) Provide active botocore.session.Session with credential in it
-        4) Create a .aws/credentials file in your system user Home directory with following data
+    You can init this class using one of two methods of authorisation:
+        1) Use your access and secret keys with optional params,
+        2) Create a .aws/credentials file in your system user Home directory with following data
            and init Polly without auth params:
 :
             '''
