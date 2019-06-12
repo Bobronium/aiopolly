@@ -195,7 +195,9 @@ from aiopolly.utils.ssml import ssml_text, pause, Strength
 
 
 async def main():
+    # Creating instance if OpusConverter
     converter = OpusConverter(auto_convert=True, keep_original=True)
+    
     polly = Polly(output_format=AudioFormat.mp3, converter=converter)
 
     text = ssml_text(f'''
@@ -206,14 +208,9 @@ For this to work, your audio must be in an {pause(Strength.none)}.ogg file encod
 (other formats may be sent as Audio or Document)
 ''')
 
-    # Synthesizing speech with lexicon we just created
-    # (we don't need to specify required param "output_format", as we using mp3 by default)
-    speech = await polly.synthesize_speech(
-        text,
-        voice_id=VoiceID.Matthew,
-        lexicon_names=['PythonML'],
-        text_type=TextType.ssml
-    )
+    # Synthesizing speech as usual, it will be converted automatically
+    speech = await polly.synthesize_speech(text, voice_id=VoiceID.Matthew, text_type=TextType.ssml)
+
 
     # Saving speech on disk with default name
     await speech.save_on_disc(directory='speech')
