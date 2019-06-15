@@ -1,6 +1,6 @@
 from .base import BasePollyObject
 from .enums import (
-    AudioFormat, ContentType, LanguageCode, Alphabet,
+    AudioFormat, ContentType, LanguageCode, Alphabet, Region,
     TextType, SpeechMarkTypes, SynthesisTaskStatus, VoiceID, Gender
 )
 from .lexicon import Lexicon, LexiconAttribute, LexiconsList
@@ -19,6 +19,7 @@ __all__ = [
     'LexiconAttribute',
     'LexiconsList',
     'Method',
+    'Region',
     'Speech',
     'SpeechMarks',
     'SpeechMarkTypes',
@@ -26,6 +27,8 @@ __all__ = [
     'SynthesisTask',
     'SynthesisTasksList',
     'SynthesisTaskStatus',
+    'TextType',
     'Voice',
+    'VoiceID',
     'VoicesList'
 ]

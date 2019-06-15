@@ -2,17 +2,16 @@ import asyncio
 import logging
 import ssl
 from http import HTTPStatus
-from typing import Union
+from typing import Union, Tuple, Optional
 
 import aiohttp
 import certifi
 from botocore.auth import SigV4Auth
 from botocore.awsrequest import AWSRequest
 
+from . import config
 from ..types import ContentType
-from ..types.enums import AUDIO_CONTENT_TYPES
 from ..types.method import Method
-from ..types.speech import SPEECH_CONTENT_TYPE_KEY, SPEECH_REQUEST_CHARACTERS_KEY, SPEECH_AUDIO_STREAM_KEY
 from ..utils import json, case
 from ..utils.credentials import get_credentials
 from ..utils.exceptions import get_exception, ResponseTypeException, JSONDecodeException, AioHTTPException
@@ -20,33 +19,33 @@ from ..utils.mixins import ContextInstanceMixin
 
 log = logging.getLogger('aiopolly')
 
-SERVICE_NAME = 'polly'
-DEFAULT_REGION = 'eu-central-1'
-BASE_URL_TEMPLATE = 'https://{service_name}.{region}.amazonaws.com/v1'
-
-CHARACTERS_HEADER = 'x-amzn-RequestCharacters'
-EXCEPTION_HEADER = 'x-amzn-ErrorType'
-
-TRUST_API_RESPONSES = False
-RETURN_RAW_RESPONSE = False
-LOAD_STREAM_ENABLED = True
-
 
 class AmazonAPIClient(ContextInstanceMixin):
-    _service_name = SERVICE_NAME
-    _default_region = DEFAULT_REGION
-    _base_url_template = BASE_URL_TEMPLATE
+    _service_name = config.SERVICE_NAME
+    _base_url_template = config.BASE_URL_TEMPLATE
 
-    _trust_api_responses = TRUST_API_RESPONSES
-    _return_raw_response = RETURN_RAW_RESPONSE
-    _load_stream_enabled = LOAD_STREAM_ENABLED
+    _exception_header = config.EXCEPTION_HEADER
 
-    def __init__(self, credentials, access_key, secret_key, region, loop):
-        self.region = region or self._default_region
-        self.base_url = self._base_url_template.format(service_name=self._service_name, region=self.region)
+    _trust_api_responses = config.TRUST_API_RESPONSES
+    _convert_to_snake = config.CONVERT_TO_SNAKE_CASE
 
-        self.__credentials = get_credentials(credentials, access_key, secret_key)
-        self.__signer = SigV4Auth(credentials=self.__credentials, service_name=SERVICE_NAME, region_name=self.region)
+    def __init__(self, region: str,
+                 access_key: Optional[str],
+                 secret_key: Optional[str],
+                 loop: Optional[asyncio.AbstractEventLoop]):
+
+        self.region = region
+
+        self.base_url = self._base_url_template.format(
+            service_name=self._service_name,
+            region=self.region,
+        )
+
+        self.__signer = SigV4Auth(
+            credentials=get_credentials(access_key, secret_key),
+            service_name=self._service_name,
+            region_name=self.region
+        )
 
         if not loop:
             loop = asyncio.get_event_loop()
@@ -64,7 +63,11 @@ class AmazonAPIClient(ContextInstanceMixin):
 
         return dict(request.headers.items())
 
-    async def request(self, method: Method, payload: dict = None, params: dict = None) -> Union[dict, str, None]:
+    async def request(self, method: Method, payload: dict = None, params: dict = None
+                      ) -> Tuple[Union[dict, bytes, None], aiohttp.ClientResponse]:
+
+        log.debug('Preparing request to API. method: %s, paylod: %s, params: %s', method, payload, params)
+
         url = method.get_url(self.base_url, params)
         request_method = method.request_method
 
@@ -76,60 +79,44 @@ class AmazonAPIClient(ContextInstanceMixin):
         headers = self.__get_signed_headers(url, request_method, payload_json)
 
         try:
-            async with self.session.request(
-                    method=request_method, url=url, data=payload_json, headers=headers) as response:
-                result = await self.get_result(url, method, payload, response)
+            log.debug('Sending request to API "%s": [%s]', url, payload_json)
+            async with self.session.request(method=request_method,
+                                            url=url,
+                                            data=payload_json,
+                                            headers=headers) as response:
+                content = await self.get_content(url, method, payload, response)
         except aiohttp.ClientError as e:
             raise AioHTTPException(url=url, payload=payload, cause=e)
 
-        return result
+        return content, response
 
-    async def get_result(self, url: str, method: Method, payload: dict, response: aiohttp.ClientResponse):
-        if self._return_raw_response:
-            return response
+    async def get_content(self, url: str, method: Method, payload: dict, response: aiohttp.ClientResponse):
+        log.debug('Getting content for "%s": [%d]', url, response.status)
 
         if response.content_type == ContentType.application_json:
-            result = self.get_json(url, payload, response)
-
+            content = await self.get_json(url, payload, response)
         elif response.content_type == ContentType.audio_json:
-            result = self.get_speech_marks(response)
-
-        elif response.content_type in AUDIO_CONTENT_TYPES:
-            result = self.get_speech(response, payload)
-
+            content = await response.content.read()
         else:
-            result = response
+            content = await response.read()
 
-        log.debug('Response for "%s": [%d] "%r"', url, response.status, str(result)[:3000])
+        log.debug('Content for "%s": [%d] "%r"', url, response.status, content)
 
         if response.status not in range(HTTPStatus.OK, HTTPStatus.BAD_REQUEST):
-            self.raise_api_exception(url, payload, response, result)
+            await self.raise_api_exception(url, payload, response, content)
+        if method.no_data_on_success:
+            return content
+        elif response.content_type not in method.expected_content_types:
+            raise ResponseTypeException(url=url, payload=payload, response=response, content=content)
 
-        if not method.no_data_on_success and response.content_type not in method.expected_content_types:
-            raise ResponseTypeException(url=url, payload=payload, response=response, result=result)
+        return content
 
-        return result
-
-    def get_speech(self, response, payload):
-        result = {
-            SPEECH_CONTENT_TYPE_KEY: response.content_type,
-            SPEECH_REQUEST_CHARACTERS_KEY: response.headers[CHARACTERS_HEADER],
-            SPEECH_AUDIO_STREAM_KEY: await response.read() if self._load_stream_enabled else response
-        }
-        result.update(case.to_snake(payload))
-        return result
-
-    @staticmethod
-    def get_speech_marks(response):
-        result = await response.content.read()
-        return [json.loads(line) for line in result.split(b'\n')[:-1]]
-
-    @staticmethod
-    def raise_api_exception(url, payload, response, result):
+    async def raise_api_exception(self, url: str, payload: Union[dict, None], response: aiohttp.ClientResponse,
+                                  content):
         if response.content_type == ContentType.application_json:
-            error_message = result.get('message')
-        elif result:
-            error_message = result
+            error_message = content.get('message')
+        elif content:
+            error_message = content
         else:
             try:
                 error_message = await response.text()
@@ -137,16 +124,16 @@ class AmazonAPIClient(ContextInstanceMixin):
                 error_message = await response.read()
 
         api_exception = get_exception(
-            response.headers.get(EXCEPTION_HEADER),
+            response.headers.get(self._exception_header),
             response.status,
             error_message
         )
-        raise api_exception(url=url, payload=payload, result=result, response=response)
+        raise api_exception(url=url, payload=payload, content=content, response=response)
 
-    @staticmethod
-    def get_json(url, payload, response):
+    async def get_json(self, url: str, payload: Union[dict, None], response: aiohttp.ClientResponse) -> dict:
         try:
             result = await response.json()
         except ValueError as e:
-            raise JSONDecodeException(url=url, payload=payload, response=await response.text(), cause=e)
-        return case.to_snake(result)
+            raise JSONDecodeException(url=url, payload=payload, response=response, cause=e)
+        if self._convert_to_snake:
+            return case.to_snake(result)

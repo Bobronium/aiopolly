@@ -3,7 +3,7 @@ from .actions import (
     lang, mark, paragraph, pause, phoneme, prosody,
     say_as, sentence, soft, ssml_text, sub, timbre, whisper
 )
-from .enums import Level, Volume, Pitch, Interpretations, Duration, DateFormat, Rate, Frequency, Strength
+from .params import Level, Volume, Pitch, Interpretation, Duration, DateFormat, Rate, Frequency, Strength, Alphabet
 
 __all__ = [
     'breath',
@@ -23,10 +23,11 @@ __all__ = [
     'sub',
     'timbre',
     'whisper',
+    'Alphabet',
     'DateFormat',
     'Duration',
     'Frequency',
-    'Interpretations',
+    'Interpretation',
     'Pitch',
     'Level',
     'Volume',

@@ -29,8 +29,7 @@ class SynthesisTasksList(BasePollyObject):
     next_token: str = None
 
     def __iter__(self):
-        for synthesis_task in self.synthesis_tasks:
-            yield synthesis_task
+        return iter(self.synthesis_tasks)
 
     def __getitem__(self, item):
         return self.synthesis_tasks[item]

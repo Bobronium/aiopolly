@@ -1,5 +1,8 @@
+import datetime
 import functools
 import io
+import logging
+import os
 from typing import List, Union
 
 import aiofiles
@@ -9,9 +12,12 @@ from .enums import LanguageCode, AudioFormat, ContentType, TextType, SpeechMarkT
 
 __all__ = ['Speech', 'SpeechMarks', 'SpeechMarksList']
 
-SPEECH_CONTENT_TYPE_KEY = 'content_type'
-SPEECH_REQUEST_CHARACTERS_KEY = 'request_characters'
-SPEECH_AUDIO_STREAM_KEY = 'audio_stream'
+
+class ConvertParams(BasePollyObject):
+    to_format: str
+    out_bitrate: int = None
+    duration_in_seconds: int = None
+    info: str = None
 
 
 class Speech(BasePollyObject):
@@ -27,9 +33,25 @@ class Speech(BasePollyObject):
     language_code: LanguageCode = None
     lexicon_names: List[str] = None
 
+    converted: bool = False
+    converted_stream: bytes = None
+    converted_params: ConvertParams = None
+
+    async def convert(self, **kwargs):
+        converter = self.polly.converter
+        if converter:
+            return await self.polly.converter.convert(self, **kwargs)
+        raise RuntimeError('Cannot find converter in Polly instance, to use it please specify one')
+
     @property
     def format(self):
+        if self.converted and self.audio_stream == self.converted_stream:
+            return self.converted_format
         return self.output_format.split('_')[0].strip()
+
+    @property
+    def converted_format(self):
+        return self.converted_params.to_format.split('_')[0].strip()
 
     @property
     @functools.lru_cache()
@@ -44,16 +66,39 @@ class Speech(BasePollyObject):
     def bytes_io(self):
         return io.BytesIO(self.audio_stream)
 
-    async def save_on_disc(self, filename=None, directory=None):
+    def filename(self, converted=True):
+        if converted and self.converted:
+            extension = self.converted_format
+        else:
+            extension = self.format
+
+        name = self.clean_text
+        if len(name) > 100:
+            name = ' '.join(name[:100].split()[:-1]) + '...'
+        name = f'{self.voice_id} - {name}.{extension}'
+
+        return name
+
+    async def save_on_disc(self, filename=None, directory=None, converted=True, overwrite=False):
+        if converted and self.converted:
+            stream = self.converted_stream
+        else:
+            stream = self.audio_stream
+
         if filename is None:
-            text = self.clean_text
-            text = text if len(text) < 50 else f'{text[:50]}...'
-            filename = f'{self.voice_id} - {text}.{self.format}'
+            filename = self.filename(converted=converted)
         if directory is not None:
             filename = '/'.join((directory, filename))
 
+        while not overwrite and os.path.exists(filename):
+            name, extension = filename.rsplit('.', maxsplit=1)
+            now = datetime.datetime.now().strftime('%S.%f')
+            filename = name + f' ({now[:-3]}).' + extension
+
+        logging.debug('Saving %s on disc' % filename)
+
         async with aiofiles.open(filename, mode='wb') as file:
-            await file.write(self.audio_stream)
+            await file.write(stream)
 
 
 class SpeechMarks(BasePollyObject):
@@ -92,3 +137,9 @@ class SpeechMarksList(BasePollyObject):
     @property
     def total_time(self):
         return self.speech_marks[-1].time
+
+    def __iter__(self):
+        return iter(self.speech_marks)
+
+    def __getitem__(self, item):
+        return self.speech_marks[item]

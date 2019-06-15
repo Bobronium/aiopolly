@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Optional
+from typing import Optional, List
 
 __all__ = [
     'Alphabet',
@@ -7,35 +7,71 @@ __all__ = [
     'ContentType',
     'Gender',
     'LanguageCode',
+    'Region',
     'SpeechMarkTypes',
+    'StrEnum',
     'SynthesisTaskStatus',
     'TextType',
     'VoiceID',
-    'AUDIO_CONTENT_TYPES',
-    'AUDIO_CONTENT_TYPE_FORMAT_MAPPING',
 ]
 
 
-class TextType(str, Enum):
+class StrEnum(str, Enum):
+    def __str__(self):
+        return self.value
+
+    def __contains__(self, other):
+        if isinstance(other, self.__class__):
+            other = other.value
+        return self.value == other
+
+    @classmethod
+    def search(cls, contain: str = None,
+               startswith: str = None,
+               endswith: str = None,
+               contained: str = None) -> List['StrEnum']:
+        """
+        :param contain: search all enum members which are contain some substring
+        :param startswith: search all enum members which are start with some substring
+        :param endswith: search all enum members which are end with some substring
+        :param contained: search all enum members which are substrings of some string
+
+        :return: all found enums
+        """
+
+        found = set()
+        if contain:
+            found.update(e for e in cls if contain in e.value)
+        if startswith:
+            found.update(e for e in cls if e.value.startswith(startswith))
+        if endswith:
+            found.update(e for e in cls if e.value.endswith(endswith))
+        if contained:
+            found.update(e for e in cls if e.value in contained)
+
+        return list(found)
+
+
+class TextType(StrEnum):
     text = 'text'
     ssml = 'ssml'
 
 
-class SpeechMarkTypes(str, Enum):
+class SpeechMarkTypes(StrEnum):
     ssml = 'ssml'
     sentence = 'sentence'
     viseme = 'viseme'
     word = 'word'
 
 
-class SynthesisTaskStatus(str, Enum):
+class SynthesisTaskStatus(StrEnum):
     scheduled = 'scheduled'
     in_progress = 'inProgress'
     completed = 'completed'
     failed = 'failed'
 
 
-class Alphabet(str, Enum):
+class Alphabet(StrEnum):
     ipa: str = 'ipa'
     x_sampa: str = 'x-sampa'
     x_amazon_pinyin: str = 'x-amazon-pinyin'
@@ -46,14 +82,14 @@ class Gender(Enum):
     male = 'Male'
 
 
-class AudioFormat(str, Enum):
+class AudioFormat(StrEnum):
     json = 'json'
     mp3 = 'mp3'
     pcm = 'pcm'
     ogg_vorbis = 'ogg_vorbis'
 
 
-class ContentType(str, Enum):
+class ContentType(StrEnum):
     application_json = 'application/json'
     application_octet_stream = 'application/octet-stream'
     audio_json = 'application/x-json-stream'
@@ -66,39 +102,59 @@ class ContentType(str, Enum):
         return AUDIO_CONTENT_TYPE_FORMAT_MAPPING.get(self)
 
 
-class LanguageCode(str, Enum):
+class Region(StrEnum):
+    us_east_2 = 'us-east-2'
+    us_east_1 = 'us-east-1'
+    us_west_1 = 'us-west-1'
+    us_west_2 = 'us-west-2'
+    ap_south_1 = 'ap-south-1'
+    ap_northeast_2 = 'ap-northeast-2'
+    ap_southeast_1 = 'ap-southeast-1'
+    ap_southeast_2 = 'ap-southeast-2'
+    ap_northeast_1 = 'ap-northeast-1'
+    ca_central_1 = 'ca-central-1'
+    cn_northwest_1 = 'cn-northwest-1'
+    eu_central_1 = 'eu-central-1'
+    eu_west_1 = 'eu-west-1'
+    eu_west_2 = 'eu-west-2'
+    eu_west_3 = 'eu-west-3'
+    eu_north_1 = 'eu-north-1'
+    sa_east_1 = 'sa-east-1'
+
+
+class LanguageCode(StrEnum):
     arb = 'arb'
-    cmn_cn = 'cmn-CN'
-    cy_gb = 'cy-GB'
-    da_dk = 'da-DK'
-    de_de = 'de-DE'
-    en_au = 'en-AU'
-    en_gb = 'en-GB'
-    en_gb_wls = 'en-GB-WLS'
-    en_in = 'en-IN'
-    en_us = 'en-US'
-    es_es = 'es-ES'
-    es_mx = 'es-MX'
-    es_us = 'es-US'
-    fr_ca = 'fr-CA'
-    fr_fr = 'fr-FR'
-    is_is = 'is-IS'
-    it_it = 'it-IT'
-    ja_jp = 'ja-JP'
-    hi_in = 'hi-IN'
-    ko_kr = 'ko-KR'
-    nb_no = 'nb-NO'
-    nl_nl = 'nl-NL'
-    pl_pl = 'pl-PL'
-    pt_br = 'pt-BR'
-    pt_pt = 'pt-PT'
-    ro_ro = 'ro-RO'
-    ru_ru = 'ru-RU'
-    sv_se = 'sv-SE'
-    tr_tr = 'tr-TR'
+    cmn_CN = 'cmn-CN'
+    cy_GB = 'cy-GB'
+    da_DK = 'da-DK'
+    de_DE = 'de-DE'
+    en_AU = 'en-AU'
+    en_GB = 'en-GB'
+    en_GB_WLS = 'en-GB-WLS'
+    en_IN = 'en-IN'
+    en_US = 'en-US'
+    es_ES = 'es-ES'
+    es_MX = 'es-MX'
+    es_US = 'es-US'
+    fr_CA = 'fr-CA'
+    fr_FR = 'fr-FR'
+    is_IS = 'is-IS'
+    it_IT = 'it-IT'
+    ja_JP = 'ja-JP'
+    hi_IN = 'hi-IN'
+    ko_KR = 'ko-KR'
+    nb_NO = 'nb-NO'
+    nl_NL = 'nl-NL'
+    pl_PL = 'pl-PL'
+    pt_BR = 'pt-BR'
+    pt_PT = 'pt-PT'
+    ro_RO = 'ro-RO'
+    ru_RU = 'ru-RU'
+    sv_SE = 'sv-SE'
+    tr_TR = 'tr-TR'
 
 
-class VoiceID(str, Enum):
+class VoiceID(StrEnum):
     Aditi = 'Aditi'
     Amy = 'Amy'
     Astrid = 'Astrid'
@@ -165,6 +221,7 @@ AUDIO_CONTENT_TYPES = (
     ContentType.audio_json,
     ContentType.audio_mpeg
 )
+
 AUDIO_CONTENT_TYPE_FORMAT_MAPPING = {
     ContentType.audio_mpeg: AudioFormat.mp3,
     ContentType.audio_json: AudioFormat.json,

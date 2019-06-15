@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Dict, Set, Optional, Callable
 from pydantic import BaseModel, Extra, Any
 from pydantic.main import validate_model
 
-from aiopolly.utils.case import to_camel
+from ..utils.case import to_camel
 
 __all__ = ['BasePollyObject']
 
@@ -17,7 +17,9 @@ class BasePollyObject(BaseModel):
         arbitrary_types_allowed = True
         extra = Extra.allow
         use_enum_values = True
+        validate_assignment = True
 
+    # need to suppress unwanted validation exceptions
     # noinspection PyMissingConstructor
     def __init__(self, **data: Any) -> None:
         if TYPE_CHECKING:  # pragma: no cover
@@ -78,18 +80,6 @@ class BasePollyObject(BaseModel):
                                "You can fix it with setting current instance: "
                                "'Polly.set_current(polly_instance)'")
         return polly
-
-    def __getattr__(self, item):
-        try:
-            return object.__getattribute__(self, item)
-        except AttributeError:
-            return BaseModel.__getattr__(self, item)
-
-    def __setattr__(self, key, value):
-        try:
-            object.__setattr__(self, key, value)
-        except AttributeError:
-            BaseModel.__setattr__(self, key, value)
 
     def __hash__(self):
         def _hash(obj):

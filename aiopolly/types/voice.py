@@ -23,6 +23,8 @@ class Voice(BasePollyObject):
                                 text_type: str = None,
                                 language_code: str = None,
                                 lexicon_names: str = None,
+                                auto_convert: bool = None,
+                                **convert_params
                                 ) -> Union[Speech, SpeechMarksList]:
         return await self.polly.synthesize_speech(text=text,
                                                   voice_id=self.id,
@@ -31,7 +33,9 @@ class Voice(BasePollyObject):
                                                   speech_mark_types=speech_mark_types,
                                                   text_type=text_type,
                                                   language_code=language_code,
-                                                  lexicon_names=lexicon_names)
+                                                  lexicon_names=lexicon_names,
+                                                  auto_convert=auto_convert,
+                                                  **convert_params)
 
 
 class VoicesList(BasePollyObject):
@@ -39,8 +43,7 @@ class VoicesList(BasePollyObject):
     voices: List[Voice]
 
     def __iter__(self):
-        for voice in self.voices:
-            yield voice
+        return iter(self.voices)
 
     def __getitem__(self, item):
         return self.voices[item]
@@ -52,6 +55,8 @@ class VoicesList(BasePollyObject):
                                 text_type: str = None,
                                 language_code: str = None,
                                 lexicon_names: str = None,
+                                auto_convert: bool = None,
+                                **convert_params
                                 ) -> Union[List[Speech], List[SpeechMarksList]]:
         return await asyncio.gather(
             *(
@@ -61,7 +66,9 @@ class VoicesList(BasePollyObject):
                                         speech_mark_types=speech_mark_types,
                                         text_type=text_type,
                                         language_code=language_code,
-                                        lexicon_names=lexicon_names)
+                                        lexicon_names=lexicon_names,
+                                        auto_convert=auto_convert,
+                                        **convert_params)
                 for voice in self.voices
             )
         )

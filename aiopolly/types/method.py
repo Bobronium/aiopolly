@@ -14,17 +14,13 @@ __all__ = ['Method']
 
 class Method(BasePollyObject):
     request_method: str
+    name: str = None
     endpoint: str = None
     endpoint_template: str = None
     expected_content_types: Union[ContentType, Tuple[ContentType, ...]] = ()
     expected_keys: Union[str, Dict[str, str]] = None
     no_data_on_success: bool = False
     url_params_allowed: bool = False
-
-    @property
-    @functools.lru_cache()
-    def name(self) -> str:
-        return getattr(self, '_name', self.__class__.__name__)
 
     @property
     @functools.lru_cache()
@@ -37,7 +33,7 @@ class Method(BasePollyObject):
         endpoint_params, url_params = self._filter_params(params)
         endpoint = self._get_endpoint(endpoint_params)
 
-        url = f'{base_url}/{endpoint}'
+        url = base_url + endpoint
 
         if url_params:
             url += f'?{urlencode(params)}'
@@ -78,14 +74,17 @@ class Method(BasePollyObject):
         return endpoint_params, url_params
 
     def __set_name__(self, owner, name):
-        self._name = name
+        try:
+            self.name = name
+        except Exception as e:
+            print(e)
 
     def __str__(self):
         return f'{self.name}: {self.endpoint or self.endpoint_template}'
 
     def __getattr__(self, item):
         try:
-            return super().__getattr__(item)
+            return BasePollyObject.__getattr__(self, item)
         except AttributeError as e:
             try:
                 return self.expected_keys[item]

@@ -8,43 +8,16 @@ exception_pattern = re.compile(r'([A-Z][a-z0-9]+){2,}')
 PolyExceptionType = ClassVar['PollyAPIException']
 
 
-def get_exception(exception_header: str, response_code: int, message: str = None) -> PolyExceptionType:
-    """
-    Exception header example:
-    'UnrecognizedClientException:http://internal.amazon.com/coral/com.amazon.coral.service/'
-    'UnauthorizedException'
-    """
-    # Trying to find and return existing exception
-    if message:
-        match_exception = next((exc for exc in EXCEPTIONS if exc.msg in message), None)
-        if match_exception:
-            return match_exception
-
-    # Creating new exception basing on response_code
-    __bases__ = next((exc for exc in BASE_EXCEPTIONS if exc.http_code == response_code), PollyAPIException)
-    exc_name = __bases__.__name__
-
-    # Trying to resolve AWS exception name from exception header if it exists
-    if exception_header:
-        try:
-            exc_name, _ = exception_header.split(':')
-        except ValueError:
-            match = exception_pattern.match(exception_header)
-            exc_name = match.group() if match else exc_name
-
-    return type(exc_name, (__bases__,), {'msg': message or __bases__.msg})
-
-
 class BasePollyException(Exception):
     msg = 'Exception occurred'
-    http_code = 400
+    match = None
 
     def __init__(self,
                  message: str = None,
                  url: str = None,
                  payload: dict = None,
                  response: ClientResponse = None,
-                 result: Union[dict, str, bytes, ClientResponse] = None,
+                 content: Union[dict, str, bytes, ClientResponse] = None,
                  cause: ClassVar[Exception] = None):
 
         if not message:
@@ -55,10 +28,10 @@ class BasePollyException(Exception):
             message += f'\n\nRequest url: {url}'
         if payload is not None:
             message += f'\n\nPayload: {payload}'
-        if result is not None:
-            message += f'\n\nResult: {result}'
         if response is not None:
             message += f'\n\nResponse: {response}'
+        if content is not None:
+            message += f'\n\nContent: {content}'
 
         super().__init__(message)
         self.url = url
@@ -80,7 +53,7 @@ class ResponseTypeException(BasePollyException):
 
 
 class ResponseValueException(BasePollyException):
-    msg = 'API send response with unexpected values'
+    msg = match = 'API send response with unexpected values'
 
 
 class PollyAPIException(BasePollyException):
@@ -89,143 +62,149 @@ class PollyAPIException(BasePollyException):
 
 class BadRequestException(PollyAPIException):
     http_code = 400
+    retry = False
 
 
 class AccessDeniedException(PollyAPIException):
     http_code = 403
+    retry = False
 
 
 class NotFoundException(PollyAPIException):
     http_code = 404
+    retry = False
 
 
 class ConflictException(PollyAPIException):
     http_code = 409
+    retry = False
 
 
 class LimitExceededException(PollyAPIException):
     http_code = 429
+    retry = False
 
 
 class TooManyRequestsException(PollyAPIException):
     http_code = 429
+    retry = False
 
 
 class ServiceFailureException(PollyAPIException):
-    msg = 'An unknown condition has caused a service failure.'
+    msg = match = 'An unknown condition has caused a service failure.'
     http_code: int = 500
+    retry = True
 
 
 class ServiceUnavailableException(PollyAPIException):
     http_code = 503
+    retry = True
 
 
 class BadGatewayException(PollyAPIException):
     http_code = 502
+    retry = True
 
 
 class EndpointRequestTimedOutException(PollyAPIException):
     http_code = 504
+    retry = True
 
 
 class InvalidS3BucketException(BadRequestException):
-    msg = 'The provided Amazon S3 bucket name is invalid.'
+    msg = match = 'The provided Amazon S3 bucket name is invalid.'
 
 
 class InvalidS3KeyException(BadRequestException):
-    msg = 'The provided Amazon S3 key prefix is invalid. Please provide a valid S3 object key name.'
+    msg = match = 'The provided Amazon S3 key prefix is invalid. Please provide a valid S3 object key name.'
 
 
 class InvalidSampleRateException(BadRequestException):
-    msg = 'The specified sample rate is not valid.'
+    msg = match = 'The specified sample rate is not valid.'
 
 
 class InvalidSnsTopicArnException(BadRequestException):
-    msg = 'The provided SNS topic ARN is invalid. Please provide a valid SNS topic ARN and try again.'
+    msg = match = 'The provided SNS topic ARN is invalid. Please provide a valid SNS topic ARN and try again.'
 
 
 class InvalidSSMLException(BadRequestException):
-    msg = 'The SSML you provided is invalid.'
+    msg = match = 'The SSML you provided is invalid.'
 
 
 class LanguageNotSupportedException(BadRequestException):
-    msg = 'The language specified is not currently supported by Amazon Polly in this capacity.'
+    msg = match = 'The language specified is not currently supported by Amazon Polly in this capacity.'
 
 
 class LexiconNotFoundException(NotFoundException):
-    msg = 'Amazon Polly can\'t find the specified lexicon.'
+    msg = match = 'Amazon Polly can\'t find the specified lexicon.'
 
 
 class MarksNotSupportedForFormatException(BadRequestException):
-    msg = 'Speech marks are not supported for the OutputFormat selected.'
+    msg = match = 'Speech marks are not supported for the OutputFormat selected.'
 
 
 class SSMLMarksNotSupportedForTextTypeException(BadRequestException):
-    msg = 'SSML speech marks are not supported for plain text-type input.'
+    msg = match = 'SSML speech marks are not supported for plain text-type input.'
 
 
 class TextLengthExceededException(BadRequestException):
-    msg = 'The value of the "Text" parameter is longer than the accepted limits.'
+    msg = match = 'Maximum text length has been exceeded'
 
 
 class InvalidTaskIdException(BadRequestException):
-    msg = 'The provided Task ID is not valid. Please provide a valid Task ID and try again.'
+    msg = match = 'The provided Task ID is not valid. Please provide a valid Task ID and try again.'
 
 
 class SynthesisTaskNotFoundException(BadRequestException):
-    msg = 'The Speech Synthesis task with requested Task ID cannot be found.'
+    msg = match = 'The Speech Synthesis task with requested Task ID cannot be found.'
 
 
 class InvalidNextTokenException(BadRequestException):
-    msg = 'The NextToken is invalid. Verify that it\'s spelled correctly, and then try again.'
+    msg = match = 'The NextToken is invalid. Verify that it\'s spelled correctly, and then try again.'
 
 
 class InvalidLexiconException(BadRequestException):
-    msg = 'Amazon Polly can\'t find the specified lexicon.'
+    msg = match = 'Amazon Polly can\'t find the specified lexicon.'
 
 
 class LexiconSizeExceededException(BadRequestException):
-    msg = 'The maximum size of the specified lexicon would be exceeded by this operation.'
+    msg = match = 'The maximum size of the specified lexicon would be exceeded by this operation.'
 
 
 class MaxLexemeLengthExceededException(BadRequestException):
-    msg = 'The maximum size of the lexeme would be exceeded by this operation.'
+    msg = match = 'The maximum size of the lexeme would be exceeded by this operation.'
 
 
 class MaxLexiconsNumberExceededException(BadRequestException):
-    msg = 'The maximum number of lexicons would be exceeded by this operation.'
+    msg = match = 'The maximum number of lexicons would be exceeded by this operation.'
 
 
-class UnsupportedPlsAlphabetException(BadRequestException):
-    msg = 'The alphabet specified by the lexicon is not a supported alphabet. Valid values are x-sampa and ipa.'
-
-
-class UnsupportedPlsLanguageException(BadRequestException):
-    msg = 'The language specified in the lexicon is unsupported.'
-
-
-class SignatureDoesNotMatchException(PollyAPIException):
-    msg = 'The request signature we calculated does not match the signature you provided.'
-
-
-class ValidationErrorExceptions(PollyAPIException):
-    msg = 'validation error detected'
-
-
-class MissingAuthTokenException(PollyAPIException):
-    msg = 'Missing Authentication Token'
-
-
-class InvalidPLSLexiconException(BadRequestException):
-    msg = 'Invalid PLS Lexicon'
+class UnsupportedPLSAlphabetException(BadRequestException):
+    msg = match = 'The alphabet specified by the lexicon is not a supported alphabet. Valid values are x-sampa and ipa.'
 
 
 class UnsupportedPLSLanguageException(BadRequestException):
-    msg = 'Unsupported PLS language'
+    msg = match = 'Unsupported PLS language'
+
+
+class SignatureDoesNotMatchException(PollyAPIException):
+    msg = match = 'The request signature we calculated does not match the signature you provided.'
+
+
+class ValidationErrorExceptions(PollyAPIException):
+    msg = match = 'validation error detected'
+
+
+class MissingAuthTokenException(PollyAPIException):
+    msg = match = 'Missing Authentication Token'
+
+
+class InvalidPLSLexiconException(BadRequestException):
+    msg = match = 'Invalid PLS Lexicon'
 
 
 class InvalidSSMLRequestException(BadRequestException):
-    msg = 'Invalid SSML request'
+    msg = match = 'Invalid SSML request'
 
 
 EXCEPTIONS = set()
@@ -247,3 +226,37 @@ BASE_EXCEPTIONS = (
     ServiceUnavailableException,
     EndpointRequestTimedOutException
 )
+
+
+def get_exception(exception_header: str, response_code: int, message: str = None) -> PolyExceptionType:
+    """
+    Exception header example:
+    'UnrecognizedClientException:http://internal.amazon.com/coral/com.amazon.coral.service/'
+    'UnauthorizedException'
+    """
+    # Trying to find and return existing exception
+    if message:
+        match_exception = next((exc for exc in EXCEPTIONS if exc.match and exc.match in message), None)
+        if match_exception:
+            return match_exception
+
+    # Trying to resolve AWS exception name from exception header if it exists
+    exc_name = None
+    if exception_header:
+        match = exception_pattern.match(exception_header)
+        if match:
+            exc_name = match.group()
+
+            # Last try to find existing exception by its name (in case match text has been changed)
+            match_exception = next((exc for exc in EXCEPTIONS if exc.__name__.lower() == exc_name.lower()), None)
+            if match_exception:
+                return match_exception
+
+    # If exception not found, creating new one basing on response_code
+    __bases__ = next((exc for exc in BASE_EXCEPTIONS if exc.http_code == response_code), PollyAPIException)
+
+    return type(
+        exc_name or __bases__.__name__,
+        (__bases__,),
+        {'msg': message or __bases__.msg}
+    )
