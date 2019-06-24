@@ -125,8 +125,6 @@ class StrEnumMeta(EnumMeta):
 
 
 class BaseStrEnum(Enum):
-    def __str__(self):
-        return self.value
 
     @classmethod
     def search(cls,
@@ -183,7 +181,8 @@ class BaseStrEnum(Enum):
 
 
 class StrEnum(str, BaseStrEnum, metaclass=StrEnumMeta):
-    pass
+    def __str__(self):
+        return self.value
 
 
 class BytesEnum(bytes, BaseStrEnum, metaclass=StrEnumMeta):
