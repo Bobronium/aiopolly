@@ -31,20 +31,20 @@ class Lexicon(BasePollyObject):
                                 language_code: str = None,
                                 auto_convert: bool = None,
                                 **convert_params
-                                ) -> Union[List[Speech], List[SpeechMarksList]]:
+                                ) -> Union[Speech, SpeechMarksList]:
         """
         Synthesizes speech with self.name in lexicon_names
         """
-        return self.polly.synthesize_speech(text=text,
-                                            voice_id=voice_id,
-                                            output_format=output_format,
-                                            sample_rate=sample_rate,
-                                            speech_mark_types=speech_mark_types,
-                                            text_type=text_type,
-                                            language_code=language_code,
-                                            lexicon_names=[self.name],
-                                            auto_convert=auto_convert,
-                                            **convert_params)
+        return await self.polly.synthesize_speech(text=text,
+                                                  voice_id=voice_id,
+                                                  output_format=output_format,
+                                                  sample_rate=sample_rate,
+                                                  speech_mark_types=speech_mark_types,
+                                                  text_type=text_type,
+                                                  language_code=language_code,
+                                                  lexicon_names=[self.name],
+                                                  auto_convert=auto_convert,
+                                                  **convert_params)
 
 
 class LexiconsList(BasePollyObject):
@@ -60,21 +60,21 @@ class LexiconsList(BasePollyObject):
                                 language_code: str = None,
                                 auto_convert: bool = None,
                                 **convert_params
-                                ) -> Union[List[Speech], List[SpeechMarksList]]:
+                                ) -> Union[Speech, SpeechMarksList]:
         """
         Synthesizes speech with self.lexicon_names in lexicon_names
         """
 
-        return self.polly.synthesize_speech(text=text,
-                                            voice_id=voice_id,
-                                            output_format=output_format,
-                                            sample_rate=sample_rate,
-                                            speech_mark_types=speech_mark_types,
-                                            text_type=text_type,
-                                            language_code=language_code,
-                                            lexicon_names=self.lexicons_names,
-                                            auto_convert=auto_convert,
-                                            **convert_params)
+        return await self.polly.synthesize_speech(text=text,
+                                                  voice_id=voice_id,
+                                                  output_format=output_format,
+                                                  sample_rate=sample_rate,
+                                                  speech_mark_types=speech_mark_types,
+                                                  text_type=text_type,
+                                                  language_code=language_code,
+                                                  lexicon_names=self.lexicons_names,
+                                                  auto_convert=auto_convert,
+                                                  **convert_params)
 
     @property
     def lexicon_names(self) -> list:
