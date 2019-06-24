@@ -1,10 +1,13 @@
+import datetime
 import functools
 import logging
-from typing import TYPE_CHECKING, Dict, Set, Optional, Callable
+from typing import TYPE_CHECKING, Dict, Set, Optional, Callable, cast
 
 from pydantic import BaseModel, Extra, Any
+from pydantic.json import timedelta_isoformat
 from pydantic.main import validate_model
 
+from ..utils import json
 from ..utils.case import to_camel
 
 __all__ = ['BasePollyObject']
@@ -18,6 +21,11 @@ class BasePollyObject(BaseModel):
         extra = Extra.allow
         use_enum_values = True
         validate_assignment = True
+
+        json_encoders = {
+            datetime.datetime: lambda v: (v.replace(tzinfo=None) - datetime.datetime(1970, 1, 1)).total_seconds(),
+            datetime.timedelta: timedelta_isoformat,
+        }
 
     # need to suppress unwanted validation exceptions
     # noinspection PyMissingConstructor
@@ -41,31 +49,36 @@ class BasePollyObject(BaseModel):
                 raise error
 
     def dict(self, *,
-             use_camel_case: bool = False,
              include: Set[str] = None,
              exclude: Set[str] = None,
              by_alias: bool = False,
-             skip_defaults: bool = False
+             skip_defaults: bool = False,
+             use_camel: bool = False,
              ) -> dict:
 
         result = BaseModel.dict(self, include=include, exclude=exclude, by_alias=by_alias, skip_defaults=skip_defaults)
 
-        if use_camel_case:
+        if use_camel:
             return to_camel(result)
         return result
 
     def json(self, *,
-             use_camel_case: bool = False,
              include: Set[str] = None,
              exclude: Set[str] = None,
              by_alias: bool = False,
              skip_defaults: bool = False,
              encoder: Optional[Callable[[Any], Any]] = None,
+             use_camel: bool = False,
              **dumps_kwargs: Any,
              ) -> str:
 
-        return BaseModel.json(self, use_camel_case=use_camel_case, include=include,
-                              exclude=exclude, by_alias=by_alias, skip_defaults=skip_defaults)
+        encoder = cast(Callable[[Any], Any], encoder or self._json_encoder)
+        return json.dumps(
+            self.dict(use_camel=use_camel, include=include,
+                      exclude=exclude, by_alias=by_alias, skip_defaults=skip_defaults),
+            default=encoder,
+            **dumps_kwargs
+        )
 
     @property
     @functools.lru_cache()
