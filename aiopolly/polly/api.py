@@ -137,3 +137,6 @@ class AmazonAPIClient(ContextInstanceMixin):
             raise JSONDecodeException(url=url, payload=payload, response=response, cause=e)
         if self._convert_to_snake:
             return case.to_snake(result)
+
+    async def close(self):
+        await self.session.close()
