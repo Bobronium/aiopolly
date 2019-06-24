@@ -11,10 +11,10 @@ def check_type_equals(type_to_check: Union[TypeVar, Type[Any]], allowed_type: Ty
         if len(type_to_check.__constraints__) > 1:
             raise TypeError(f'Only {allowed_type} is allowed, not {type_to_check} {type_to_check.__constraints__}')
 
-        elif issubclass(type_to_check.__constraints__[0], allowed_type):
+        elif type_to_check.__constraints__[0] is not allowed_type:
             raise TypeError(f'Unexpected type {type_to_check.__constraints__[0]}, allowed type: {allowed_type}')
 
-    elif not isinstance(type_to_check, type) or not issubclass(type_to_check, allowed_type):
+    elif type_to_check is not allowed_type:
         raise TypeError(f'Unexpected type {type_to_check}, allowed type: {allowed_type}')
 
 
