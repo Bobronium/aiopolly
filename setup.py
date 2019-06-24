@@ -43,7 +43,7 @@ setup(
     long_description=README,
     requires_python='>=3.7',
     long_description_content_type='text/markdown',
-    url='https://github.com/MrMrRobat/aiopolly˙',
+    url='https://github.com/MrMrRobat/aiopolly',
     packages=find_packages(exclude=['examples']),
     install_requires=get_requirements(),
     license='MIT',
