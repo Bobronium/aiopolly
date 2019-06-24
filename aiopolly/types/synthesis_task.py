@@ -2,7 +2,7 @@ import datetime
 from typing import List
 
 from .base import BasePollyObject
-from .enums import AudioFormat
+from .params import AudioFormat
 
 __all__ = ['SynthesisTask', 'SynthesisTasksList']
 

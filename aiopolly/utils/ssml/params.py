@@ -2,8 +2,8 @@
 See documentation: https://docs.aws.amazon.com/en_us/polly/latest/dg/supported-ssml.html
 """
 
+from ..strenum import StrEnum
 from ...types import Alphabet
-from ...types.enums import StrEnum
 
 __all__ = [
     'Alphabet',
@@ -19,18 +19,22 @@ __all__ = [
 ]
 
 
-class Level(StrEnum):
+class DashParamEnum(StrEnum):
+    __sep__ = '-'
+
+
+class Level(DashParamEnum):
     """
     :enum Strong: Increases the volume and slows the speaking rate so that the speech is louder and slower.
     :enum Moderate: Increases the volume and slows the speaking rate, but less than strong. Moderate is the default.
     :enum Reduced: Decreases the volume and speeds up the speaking rate. Speech is softer and faster.
     """
-    strong = 'strong'
-    moderate = 'moderate'
-    reduced = 'reduced'
+    strong: str
+    moderate: str
+    reduced: str
 
 
-class Strength(StrEnum):
+class Strength(DashParamEnum):
     """
     :enum none: No pause. Use none to remove a normally occurring pause, such as after a period.
     :enum x-weak: Has the same strength as none, no pause.
@@ -39,53 +43,53 @@ class Strength(StrEnum):
     :enum strong: Sets a pause of the same duration as the pause after a sentence.
     :enum x-strong: Sets a pause of the same duration as the pause after a paragraph.
     """
-    none = 'none'
-    x_weak = 'x-weak'
-    weak = 'weak'
-    medium = 'medium'
-    strong = 'strong'
-    x_strong = 'x-strong'
+    none: str
+    x_weak: str
+    weak: str
+    medium: str
+    strong: str
+    x_strong: str
 
 
-class Volume(StrEnum):
+class Volume(DashParamEnum):
     """
     :enum default: Resets volume to the default level for the current voice.
     :enums: silent, x-soft, soft, medium, loud, x-loud: Sets the volume to a predefined value for the current voice.
     """
-    default = 'default'
-    silent = 'silent'
-    x_soft = 'x-soft'
-    soft = 'soft'
-    medium = 'medium'
-    loud = 'loud'
-    x_loud = 'x-loud'
+    default: str
+    silent: str
+    x_soft: str
+    soft: str
+    medium: str
+    loud: str
+    x_loud: str
 
 
-class Rate(StrEnum):
+class Rate(DashParamEnum):
     """
     :enums: x-slow, slow, medium, fast,x-fast. Sets the pitch to a predefined value for the selected voice.
     """
-    x_slow = 'x-slow'
-    slow = 'slow'
-    medium = 'medium'
-    fast = 'fast'
-    x_fast = 'x-fast'
+    x_slow: str
+    slow: str
+    medium: str
+    fast: str
+    x_fast: str
 
 
-class Pitch(StrEnum):
+class Pitch(DashParamEnum):
     """
     :enum default: Resets pitch to the default level for the current voice.
     :enums x-low, low, medium, high, x-high: Sets the pitch to a predefined value for the current voice.
     """
-    default = 'default'
-    x_low = 'x-low'
-    low = 'low'
-    medium = 'medium'
-    high = 'high'
-    x_high = 'x-high'
+    default: str
+    x_low: str
+    low: str
+    medium: str
+    high: str
+    x_high: str
 
 
-class Interpretation(StrEnum):
+class Interpretation(DashParamEnum):
     """
     :enum characters or spell-out: Spells out each letter of the text, as in a-b-c.
     :enum cardinal or number: Interprets the numerical text as a cardinal number, as in 1,234.
@@ -99,22 +103,22 @@ class Interpretation(StrEnum):
     :enum expletive: "Beeps out" the content included within the tag.
     :enum telephone: Interprets the numerical text as a 7-digit or 10-digit telephone number, as in 2025551212.
     """
-    characters = 'characters'
-    spell_out = 'spell-out'
-    cardinal = 'cardinal'
-    number = 'number'
-    ordinal = 'ordinal'
-    digits = 'digits'
-    fraction = 'fraction'
-    unit = 'unit'
-    date = 'date'
-    time = 'time'
-    address = 'address'
-    expletive = 'expletive'
-    telephone = 'telephone'
+    characters: str
+    spell_out: str
+    cardinal: str
+    number: str
+    ordinal: str
+    digits: str
+    fraction: str
+    unit: str
+    date: str
+    time: str
+    address: str
+    expletive: str
+    telephone: str
 
 
-class DateFormat(StrEnum):
+class DateFormat(DashParamEnum):
     """
     :enum mdy: Month-day-year.
     :enum dmy: Day-month-year.
@@ -129,40 +133,40 @@ class DateFormat(StrEnum):
     :enum yyyymmdd: Year-month-day.
     """
 
-    mdy = 'mdy'
-    dmy = 'dmy'
-    ymd = 'ymd'
-    md = 'md'
-    dm = 'dm'
-    ym = 'ym'
-    my = 'my'
-    d = 'd'
-    m = 'm'
-    y = 'y'
-    yyyymmdd = 'yyyymmdd'
+    mdy: str
+    dmy: str
+    ymd: str
+    md: str
+    dm: str
+    ym: str
+    my: str
+    d: str
+    m: str
+    y: str
+    yyyymmdd: str
 
 
-class Frequency(StrEnum):
+class Frequency(DashParamEnum):
     """Controls how often breathing sounds occur in the text."""
-    default = 'default'
-    x_low = 'x-low'
-    low = 'low'
-    medium = 'medium'
-    high = 'high'
-    x_high = 'x-high'
+    default: str
+    x_low: str
+    low: str
+    medium: str
+    high: str
+    x_high: str
 
 
-class Duration(StrEnum):
+class Duration(DashParamEnum):
     """Controls the length of the breath."""
-    default = 'default'
-    x_low = 'x-short'
-    low = 'short'
-    medium = 'medium'
-    high = 'long'
-    x_high = 'x-long'
+    default: str
+    x_short: str
+    short: str
+    medium: str
+    long: str
+    x_long: str
 
 
-class SpeechPart(StrEnum):
+class SpeechPart(StrEnum, converter=lambda name: f'amazon:{name}'):
     """
     :enum amazon:VB: interprets the word as a verb (present simple).
     :enum: amazon:VBD: interprets the word as past tense or as a past participle.
@@ -175,6 +179,6 @@ class SpeechPart(StrEnum):
         (freshwater fish) for the audio text.
 
     """
-    VB = 'amazon:VB'
-    VBD = 'amazon:VBD'
-    SENSE_1 = 'amazon:SENSE_1'
+    VB: str
+    VBD: str
+    SENSE_1: str

@@ -56,7 +56,7 @@ class Methods:
     SynthesizeSpeech = types.Method(
         endpoint='/v1/speech',
         request_method='POST',
-        expected_content_types=types.enums.AUDIO_CONTENT_TYPES
+        expected_content_types=types.params.AUDIO_CONTENT_TYPES
     )
 
 
@@ -335,7 +335,7 @@ class Polly(api.AmazonAPIClient):
 
         content, response = await self.request(self.methods.SynthesizeSpeech, payload=case.to_camel(payload))
 
-        if response.content_type == types.ContentType.audio_json:
+        if response.content_type == types.ContentType.application_x_json_stream:
             return types.SpeechMarksList(
                 speech_marks=[json.loads(line) for line in content.split(b'\n')[:-1]]
             )

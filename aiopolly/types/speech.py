@@ -8,7 +8,7 @@ from typing import List, Union
 import aiofiles
 
 from .base import BasePollyObject
-from .enums import LanguageCode, AudioFormat, ContentType, TextType, SpeechMarkTypes
+from .params import LanguageCode, AudioFormat, ContentType, TextType, SpeechMarkTypes
 
 __all__ = ['Speech', 'SpeechMarks', 'SpeechMarksList']
 

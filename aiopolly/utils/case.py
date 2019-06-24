@@ -7,6 +7,14 @@ def string_to_camel(string: str):
     return ''.join(x[:1].upper() + x[1:] for x in string.split('_'))
 
 
+def string_to_lower_camel(string: str):
+    in_camel = string_to_camel(string)
+    if len(in_camel) > 1:
+        return in_camel[0].lower() + in_camel[1:]
+    elif string:
+        return in_camel.lower()
+
+
 def string_to_snake(string: str):
     result = re.sub('([A-Z]+)', r'_\1', string).lower()
     if result.startswith('_'):
@@ -35,3 +43,4 @@ def to_case(obj: Union[str, dict, list],
 
 to_snake = functools.partial(to_case, str_case_converter=string_to_snake)
 to_camel = functools.partial(to_case, str_case_converter=string_to_camel)
+to_lower_camel = functools.partial(to_case, str_case_converter=string_to_lower_camel)

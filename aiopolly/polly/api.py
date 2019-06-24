@@ -95,7 +95,7 @@ class AmazonAPIClient(ContextInstanceMixin):
 
         if response.content_type == ContentType.application_json:
             content = await self.get_json(url, payload, response)
-        elif response.content_type == ContentType.audio_json:
+        elif response.content_type == ContentType.application_x_json_stream:
             content = await response.content.read()
         else:
             content = await response.read()

@@ -2,7 +2,7 @@ import datetime
 from typing import List, Union
 
 from .base import BasePollyObject
-from .enums import LanguageCode, Alphabet, SpeechMarkTypes
+from .params import LanguageCode, Alphabet, SpeechMarkTypes
 from .speech import SpeechMarksList, Speech
 
 __all__ = ['LexiconAttribute', 'Lexicon', 'LexiconsList']

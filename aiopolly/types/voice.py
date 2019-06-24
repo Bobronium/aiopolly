@@ -2,7 +2,7 @@ import asyncio
 from typing import List, Union
 
 from .base import BasePollyObject
-from .enums import Gender, VoiceID, LanguageCode, SpeechMarkTypes
+from .params import Gender, VoiceID, LanguageCode, SpeechMarkTypes
 from .speech import Speech, SpeechMarksList
 
 __all__ = ['Voice', 'VoicesList']

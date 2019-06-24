@@ -1,10 +1,10 @@
 from .base import BasePollyObject
-from .enums import (
+from .lexicon import Lexicon, LexiconAttribute, LexiconsList
+from .method import Method
+from .params import (
     AudioFormat, ContentType, LanguageCode, Alphabet, Region,
     TextType, SpeechMarkTypes, SynthesisTaskStatus, VoiceID, Gender
 )
-from .lexicon import Lexicon, LexiconAttribute, LexiconsList
-from .method import Method
 from .speech import Speech, SpeechMarks, SpeechMarksList
 from .synthesis_task import SynthesisTask, SynthesisTasksList
 from .voice import VoicesList, Voice
