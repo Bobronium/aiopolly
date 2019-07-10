@@ -1,149 +1,56 @@
-import abc
+"""
+Based on: https://github.com/MrMrRobat/AnyStrEnum
+"""
+
 from enum import Enum, EnumMeta, _EnumDict, auto
-from typing import List, Callable, AnyStr, TypeVar, Union, Type, Any, Iterable
+from types import FunctionType
+from typing import List, Callable, AnyStr, Set, TypeVar, Type, Any
 
 SEP_ATTR = "__sep__"
 CONVERTER_ATTR = "__converter__"
 
+TYPE_BLACKLIST = FunctionType, property, type, classmethod, staticmethod
 
-def check_type_equals(type_to_check: Union[TypeVar, Type[Any]], allowed_type: Type[Any]):
-    if isinstance(type_to_check, TypeVar):
-        if len(type_to_check.__constraints__) > 1:
-            raise TypeError(f'Only {allowed_type} is allowed, not {type_to_check} {type_to_check.__constraints__}')
-
-        elif type_to_check.__constraints__[0] is not allowed_type:
-            raise TypeError(f'Unexpected type {type_to_check.__constraints__[0]}, allowed type: {allowed_type}')
-
-    elif type_to_check is not allowed_type:
-        raise TypeError(f'Unexpected type {type_to_check}, allowed type: {allowed_type}')
-
-
-def resolve_mixin(types: Iterable[Type[Any]], expected_types: Iterable[Type[Any]]) -> Type[Any]:
-    """
-    :param types: types which we need to check for some parent class in them
-    :param expected_types: classes which is expected to be parent class of one object in :param types
-    :return first of expected_types which is found as subclass of any given types
-    :raises TypeError if non of expected_types is subclass of any given types
-    """
-    for expected_type in expected_types:
-        if any(obj for obj in types if issubclass(obj, expected_type)):
-            return expected_type
-
-    raise TypeError(f'None of expected mixins {expected_types} found in {types} bases')
-
-
-def getattr_from_objects(objects: Iterable[Any], attr: str, *default: Any):
-    """
-    :param objects: objects to get attribute from
-    :param attr: attribute to get
-    :param default: value which will be returned in case when none of given objects have needed attr
-    :return: value from getattr() on first object which has needed attr or default value if given
-    :raises: AttributeError if none of objects has needed attr
-    """
-    for obj in objects:
-        try:
-            return getattr(obj, attr)
-        except AttributeError:
-            continue
-    else:
-        try:
-            return default[0]
-        except IndexError:
-            raise AttributeError(f'None of objects in {objects} has attr "{attr}"')
-
-
-class BaseItem(abc.ABC):
-    @abc.abstractmethod
-    def __call__(self, name: str, str_type: Type[AnyStr]) -> AnyStr:
-        pass
-
-
-class Item(BaseItem):
-
-    def __init__(self, sep: AnyStr = None, converter: Callable[[AnyStr, type], AnyStr] = None):
+class StrItem:
+    # https://youtrack.jetbrains.com/issue/PY-24426
+    # noinspection PyMissingConstructor
+    def __init__(self, sep: AnyStr = None, converter: Callable[[str], str] = None):
         self.sep = sep
         self.converter = converter
 
-    def __call__(self, name: str, str_type: Type[AnyStr]) -> AnyStr:
-        return self.convert(name, str_type)
-
-    def convert(self, name: str, str_type) -> AnyStr:
-        if str_type is str:
-            new_name = str(name)
-        elif str_type is bytes:
-            new_name = bytes(name, 'utf8')
-        else:
-            raise TypeError(f'Unexpected type of string: {str_type}, expected types: str, bytes')
-
+    def generate_value(self, name: str) -> str:
         if self.converter:
-            new_name = self.converter(new_name)
+            name = self.converter(name)
         if self.sep:
-            old_sep = '_' if issubclass(str_type, str) else b'_'
-            new_name = new_name.replace(old_sep, self.sep)
+            name = name.replace('_', self.sep)
 
-        return new_name
-
-
-auto_str = Item
+        return name
 
 
-class StrEnumMeta(EnumMeta):
+class BaseStrEnum(str, Enum):
+    __sep__: str = None
+    __converter__: Callable[[str], str] = None
 
-    # It's here to avoid 'got an unexpected keyword argument' TypeError
-    @classmethod
-    def __prepare__(mcs, *args, sep: AnyStr = None, converter: Callable[[AnyStr], AnyStr] = None, **kwargs):
-        return super().__prepare__(*args, **kwargs)
-
-    def __new__(mcs, cls, bases, class_dict, sep: AnyStr = None, converter: Callable[[AnyStr], AnyStr] = None):
-        # Trying to get sep and converter from class dict and base classes
-        if sep is None:
-            sep = class_dict.get(SEP_ATTR) or getattr_from_objects(bases, SEP_ATTR, None)
-        if converter is None:
-            converter = class_dict.get(CONVERTER_ATTR) or getattr_from_objects(bases, CONVERTER_ATTR, None)
-
-        str_type = resolve_mixin(bases, (str, bytes))
-        str_converter = Item(sep=sep, converter=converter)
-
-        new_class_dict = _EnumDict()
-        for name, obj_type in class_dict.get('__annotations__', {}).items():
-            if name.startswith('_') or name in class_dict:
-                continue
-            check_type_equals(obj_type, str_type)
-            new_class_dict[name] = str_converter(name, str_type)
-
-        for name, value in class_dict.items():
-            if isinstance(value, BaseItem):
-                value = value(name, str_type=str_type)
-            elif isinstance(value, auto):
-                value = str_converter(name, str_type=str_type)
-            new_class_dict[name] = value
-
-        new_class_dict[SEP_ATTR] = sep
-        new_class_dict[CONVERTER_ATTR] = converter
-
-        return super().__new__(mcs, cls, bases, new_class_dict)
-
-
-class BaseStrEnum(Enum):
+    def _generate_next_value_(*_):
+        return auto()
 
     @classmethod
-    def search(cls,
-               contains: AnyStr = None,
-               contained: AnyStr = None,
+    def filter(cls,
+               contains: AnyStr = None, *,
+               contained_in: AnyStr = None,
                startswith: AnyStr = None,
                endswith: AnyStr = None,
                case_sensitive: bool = False,
                intersection: bool = True,
-               inverse: bool = False) -> List['StrEnum']:
+               inverse: bool = False) -> Set['StrEnum']:
         """
-        :param contains: search all enum members which are contain some substring
-        :param startswith: search all enum members which are start with some substring
-        :param endswith: search all enum members which are end with some substring
-        :param contained: search all enum members which are substrings of some string
+        :param contains: filter all enum members which are contain some substring
+        :param startswith: filter all enum members which are start with some substring
+        :param endswith: filter all enum members which are end with some substring
+        :param contained_in: filter all enum members which are substrings of some string
         :param case_sensitive: defines whether found values must match case of given string
         :param inverse: if True, all enum members except found will be returned
         :param intersection: indicates whether function should return all found objects or their interception
-
         :return: all found enums
         """
 
@@ -162,12 +69,12 @@ class BaseStrEnum(Enum):
         if endswith:
             endswith = prepare(endswith)
             found_sets.append({e for e in cls if prepare(e).endswith(endswith)})
-        if contained:
-            contained = prepare(contained)
-            found_sets.append({e for e in cls if prepare(e) in contained})
+        if contained_in:
+            contained_in = prepare(contained_in)
+            found_sets.append({e for e in cls if prepare(e) in contained_in})
 
         if not found_sets:
-            return []
+            return set()
 
         if intersection:
             found = found_sets[0].intersection(*found_sets[1:])
@@ -175,17 +82,64 @@ class BaseStrEnum(Enum):
             found = found_sets[0].union(*found_sets[1:])
 
         if inverse:
-            return list({e for e in cls} - found)
+            return {e for e in cls} - found
 
-        return list(found)
+        return found
 
-
-class StrEnum(str, BaseStrEnum, metaclass=StrEnumMeta):
     def __str__(self):
         return self.value
 
 
-class BytesEnum(bytes, BaseStrEnum, metaclass=StrEnumMeta):
+class StrEnumMeta(EnumMeta):
+    # It's here to avoid 'got an unexpected keyword argument' TypeError
+    @classmethod
+    def __prepare__(mcs, *args, sep: AnyStr = None, converter: Callable[[str], str] = None, **kwargs):
+        return super().__prepare__(*args, **kwargs)
 
-    def __str__(self):
-        return str(self.value)
+    def __new__(mcs, cls, bases, class_dict, sep: AnyStr = None, converter: Callable[[str], str] = None):
+        mixin_type, base_enum = mcs._get_mixins_(bases)
+        if not issubclass(base_enum, BaseStrEnum):
+            raise TypeError(f'Unexpected Enum type \'{base_enum.__name__}\'. '
+                            f'Only {BaseStrEnum.__name__} and its subclasses are allowed')
+        if not issubclass(mixin_type, (str, bytes)):
+            raise TypeError(f'Unexpected mixin type \'{mixin_type.__name__}\'. '
+                            f'Only str, bytes and their subclasses are allowed')
+
+        # Trying to get sep and converter from class dict and base enum class
+        if sep is None:
+            sep = class_dict.get(SEP_ATTR) or base_enum.__sep__
+        if converter is None:
+            converter = class_dict.get(CONVERTER_ATTR) or base_enum.__converter__
+
+        item = StrItem(sep=sep, converter=converter)
+        new_class_dict = _EnumDict()
+        for name, type_hint in class_dict.get('__annotations__', {}).items():
+            if name.startswith('_') or name in class_dict:
+                continue
+            mcs.check_type_equals(type_hint, mixin_type)
+            value = item.generate_value(name)
+            new_class_dict[name] = value
+            mcs.check_type_equals(type(value), mixin_type)
+
+        for name, value in class_dict.items():
+            if isinstance(value, StrItem):
+                value = value.generate_value(name)
+            if not (name.startswith('_') or isinstance(value, TYPE_BLACKLIST)):
+                mcs.check_type_equals(type(value), mixin_type)
+
+            new_class_dict[name] = value
+
+        new_class_dict[SEP_ATTR] = sep
+        new_class_dict[CONVERTER_ATTR] = converter
+
+        return super().__new__(mcs, cls, bases, new_class_dict)
+
+    @staticmethod
+    def check_type_equals(type_to_check: Any, allowed_type: Type[Any]):
+        if type_to_check is not allowed_type:
+            raise TypeError(f'Unexpected type {getattr(type_to_check, "__name__", type_to_check)}'
+                            f', allowed type: {allowed_type.__name__}')
+
+
+class StrEnum(BaseStrEnum, metaclass=StrEnumMeta):
+    ...
