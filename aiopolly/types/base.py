@@ -1,11 +1,9 @@
 import datetime
 import functools
 import logging
-from typing import TYPE_CHECKING, Dict, Set, Optional, Callable, cast
 
-from pydantic import BaseModel, Extra, Any
+from pydantic import BaseModel, Extra
 from pydantic.json import timedelta_isoformat
-from pydantic.main import validate_model
 
 from ..utils import json
 from ..utils.case import to_camel
@@ -19,66 +17,14 @@ class BasePollyObject(BaseModel):
     class Config:
         arbitrary_types_allowed = True
         extra = Extra.allow
-        use_enum_values = True
         validate_assignment = True
+        allow_population_by_alias = True
+        alias_generator = to_camel
 
         json_encoders = {
             datetime.datetime: lambda v: (v.replace(tzinfo=None) - datetime.datetime(1970, 1, 1)).total_seconds(),
             datetime.timedelta: timedelta_isoformat,
         }
-
-    # need to suppress unwanted validation exceptions
-    # noinspection PyMissingConstructor
-    def __init__(self, **data: Any) -> None:
-        if TYPE_CHECKING:  # pragma: no cover
-            self.__values__: Dict[str, Any] = {}
-            self.__fields_set__: Set[str] = set()
-        values, fields_set, error = validate_model(self, data, raise_exc=False)
-        object.__setattr__(self, '__values__', values)
-        object.__setattr__(self, '__fields_set__', fields_set)
-
-        if error:
-            try:
-                trust_api_responses = self.polly._trust_api_responses
-            except RuntimeError:
-                trust_api_responses = True
-
-            if trust_api_responses:
-                log.exception('Got unexpected params in API response:', exc_info=error)
-            else:
-                raise error
-
-    def dict(self, *,
-             include: Set[str] = None,
-             exclude: Set[str] = None,
-             by_alias: bool = False,
-             skip_defaults: bool = False,
-             use_camel: bool = False,
-             ) -> dict:
-
-        result = BaseModel.dict(self, include=include, exclude=exclude, by_alias=by_alias, skip_defaults=skip_defaults)
-
-        if use_camel:
-            return to_camel(result)
-        return result
-
-    def json(self, *,
-             include: Set[str] = None,
-             exclude: Set[str] = None,
-             by_alias: bool = False,
-             skip_defaults: bool = False,
-             encoder: Optional[Callable[[Any], Any]] = None,
-             use_camel: bool = False,
-             **dumps_kwargs: Any,
-             ) -> str:
-
-        encoder = cast(Callable[[Any], Any], encoder or self._json_encoder)
-        return json.dumps(
-            self.dict(use_camel=use_camel, include=include,
-                      exclude=exclude, by_alias=by_alias, skip_defaults=skip_defaults),
-            default=encoder,
-            **dumps_kwargs
-        )
 
     @property
     @functools.lru_cache()
@@ -93,6 +39,12 @@ class BasePollyObject(BaseModel):
                                "You can fix it with setting current instance: "
                                "'Polly.set_current(polly_instance)'")
         return polly
+
+    def raw_dict(self):
+        """
+        :return: raw data that we get from AWS Polly API
+        """
+        return json.loads(self.dict(by_alias=True))
 
     def __hash__(self):
         def _hash(obj):

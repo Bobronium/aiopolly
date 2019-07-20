@@ -94,7 +94,10 @@ class AmazonAPIClient(ContextInstanceMixin):
         log.debug('Getting content for "%s": [%d]', url, response.status)
 
         if response.content_type == ContentType.application_json:
-            content = await self.get_json(url, payload, response)
+            try:
+                content = await response.json()
+            except ValueError as e:
+                raise JSONDecodeException(url=url, payload=payload, response=response, cause=e)
         elif response.content_type == ContentType.application_x_json_stream:
             content = await response.content.read()
         else:
@@ -129,14 +132,6 @@ class AmazonAPIClient(ContextInstanceMixin):
             error_message
         )
         raise api_exception(url=url, payload=payload, content=content, response=response)
-
-    async def get_json(self, url: str, payload: Union[dict, None], response: aiohttp.ClientResponse) -> dict:
-        try:
-            result = await response.json()
-        except ValueError as e:
-            raise JSONDecodeException(url=url, payload=payload, response=response, cause=e)
-        if self._convert_to_snake:
-            return case.to_snake(result)
 
     async def close(self):
         await self.session.close()
