@@ -11,9 +11,10 @@ CONVERTER_ATTR = "__converter__"
 
 TYPE_BLACKLIST = FunctionType, property, type, classmethod, staticmethod
 
+
 class StrItem:
-    # https://youtrack.jetbrains.com/issue/PY-24426
-    # noinspection PyMissingConstructor
+    __slots__ = 'sep', 'converter'
+
     def __init__(self, sep: AnyStr = None, converter: Callable[[str], str] = None):
         self.sep = sep
         self.converter = converter
@@ -30,6 +31,7 @@ class StrItem:
 class BaseStrEnum(str, Enum):
     __sep__: str = None
     __converter__: Callable[[str], str] = None
+    __return_missing__: bool = False
 
     def _generate_next_value_(*_):
         return auto()
@@ -134,6 +136,32 @@ class StrEnumMeta(EnumMeta):
 
         return super().__new__(mcs, cls, bases, new_class_dict)
 
+    def __call__(cls, value, **kwargs):
+        """
+        For ability to check values by 'isinstance'
+        (only if their type same as enums base type)
+
+        >>> class MyEnum(StrEnum):
+        ...     __return_missing__ = True
+        ...     member1: str
+        ...     member2: str
+        ...
+        >>> value_to_check = 'invalid_member'
+        >>> if not isinstance(MyEnum(value_to_check), MyEnum):
+        ...     print(f'{value_to_check} is not a valid MyEnum')
+        invalid_member is not a valid MyEnum
+
+        :param value: value to check
+        :param kwargs: named args for EnumMeta
+        """
+
+        try:
+            return super().__call__(value, **kwargs)
+        except ValueError:
+            if not kwargs and cls.__return_missing__ and type(value) is cls._member_type_:
+                return value
+            raise
+
     @staticmethod
     def check_type_equals(type_to_check: Any, allowed_type: Type[Any]):
         if type_to_check is not allowed_type:
@@ -142,4 +170,4 @@ class StrEnumMeta(EnumMeta):
 
 
 class StrEnum(BaseStrEnum, metaclass=StrEnumMeta):
-    ...
+    __return_missing__ = True
