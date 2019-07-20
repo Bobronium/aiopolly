@@ -1,6 +1,6 @@
 import functools
 import re
-from typing import Union, Callable
+from typing import Union, Callable, Any
 
 
 def string_to_camel(string: str):
@@ -22,25 +22,31 @@ def string_to_snake(string: str):
     return result
 
 
-def to_case(obj: Union[str, dict, list],
-            ignore_string=False,
-            no_exception=False,
-            str_case_converter: Callable = string_to_snake) -> Union[str, dict, list]:
+def to_case(
+        obj: Union[str, dict, list, Any],
+        ignore_string=False,
+        any_type=False,
+        str_converter: Callable = string_to_snake
+) -> Union[str, dict, list, Any]:
     if isinstance(obj, str):
-        return obj if ignore_string else str_case_converter(obj)
+        return obj if ignore_string else str_converter(obj)
     elif isinstance(obj, dict):
-        return {str_case_converter(key): to_case(value, ignore_string=True, no_exception=True,
-                                                 str_case_converter=str_case_converter)
-                for key, value in obj.items()}
+        return {
+            str_converter(key):
+            to_case(value, ignore_string=True, any_type=True, str_converter=str_converter)
+            for key, value in obj.items()
+        }
     elif isinstance(obj, list):
-        return [to_case(element, ignore_string=True, no_exception=True, str_case_converter=str_case_converter)
-                for element in obj]
-    elif no_exception:
+        return [
+            to_case(element, ignore_string=True, any_type=True, str_converter=str_converter)
+            for element in obj
+        ]
+    elif any_type:
         return obj
 
     raise ValueError(f'Unexpected type {type(obj)}. Supported types: str, dict, list')
 
 
-to_snake = functools.partial(to_case, str_case_converter=string_to_snake)
-to_camel = functools.partial(to_case, str_case_converter=string_to_camel)
-to_lower_camel = functools.partial(to_case, str_case_converter=string_to_lower_camel)
+to_snake = functools.partial(to_case, str_converter=string_to_snake)
+to_camel = functools.partial(to_case, str_converter=string_to_camel)
+to_lower_camel = functools.partial(to_case, str_converter=string_to_lower_camel)
