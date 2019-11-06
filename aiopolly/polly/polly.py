@@ -85,6 +85,7 @@ class Polly(api.AmazonAPIClient):
                  text_type: Union[List[str], str] = None,
                  language_code: str = None,
                  lexicon_names: List[str] = None,
+                 engine: str = None,
                  speech_mark_types: List[str] = None,
                  output_s3_key_prefix: str = None,
                  output_s3_bucket_name: str = None,
@@ -112,6 +113,7 @@ class Polly(api.AmazonAPIClient):
             :param output_format: the format in which the returned output will be encoded;
             :param sample_rate: audio frequency specified in Hz;
             :param lexicon_names: list of one or more pronunciation lexicon names;
+            :param engine: Speech engine to use, either 'standard' or 'neural'. Some voices are not available with 'neural'.
             :param text_type: specifies whether the input text is plain text or SSML;
             :param language_code: optional language code for the Synthesize Speech request.
             :param output_s3_key_prefix: the Amazon S3 key prefix for the output speech file;
@@ -139,6 +141,7 @@ class Polly(api.AmazonAPIClient):
             text_type=text_type,
             language_code=language_code,
             lexicon_names=lexicon_names,
+            engine=engine,
             speech_mark_types=speech_mark_types,
             output_s3_key_prefix=output_s3_key_prefix,
             output_s3_bucket_name=output_s3_bucket_name,
@@ -276,6 +279,7 @@ class Polly(api.AmazonAPIClient):
                                           text_type: str = None,
                                           language_code: str = None,
                                           lexicon_names: str = None,
+                                          engine: str = None
                                           ) -> types.SynthesisTask:
         """
         Allows the creation of an asynchronous synthesis task, by starting a new SpeechSynthesisTask.
@@ -295,6 +299,7 @@ class Polly(api.AmazonAPIClient):
         :param text_type: Specifies whether the input text is plain text or SSML. The default value is plain text.
         :param language_code: Optional language code for the Synthesize Speech request.
         :param lexicon_names: List of one or more pronunciation lexicon names to apply during synthesis
+        :param engine: Speech engine to use, either 'standard' or 'neural'. Some voices are not available with 'neural'.
         :return:
         """
 
@@ -311,6 +316,7 @@ class Polly(api.AmazonAPIClient):
                                 language_code: Union[types.LanguageCode, str] = None,
                                 lexicon_names: list = None,
                                 auto_convert: bool = None,
+                                engine: str = None,
                                 **converter_params
                                 ) -> Union[types.Speech, types.SpeechMarksList]:
         """
@@ -326,6 +332,7 @@ class Polly(api.AmazonAPIClient):
         :param text_type: Specifies whether the input text is plain text or SSML. The default value is plain text.
         :param language_code: Optional language code for the Synthesize Speech request.
         :param lexicon_names: List of one or more pronunciation lexicon names to apply during synthesis
+        :param engine: Speech engine to use, either 'standard' or 'neural'. Some voices are not available with 'neural'.
 
         :param auto_convert: param indicate whether speech will be auto converted after synthesis
         :param converter_params: params which will be placed in self.converter.convert method
