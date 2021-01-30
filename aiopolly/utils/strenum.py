@@ -104,7 +104,7 @@ class StrEnumMeta(EnumMeta):
         # However, 'class_name' is unneccessary and only used to print an exception
         # So we examine the signature accordingly and pick the right one
         if len(signature(mcs._get_mixins_).parameters) == 2:  # (class_name, bases)
-            mixin_type, base_enum = mcs._get_mixins_('StrEnumMeta', bases)
+            mixin_type, base_enum = mcs._get_mixins_(cls, bases)
         else:  # Fallback to (bases) signature
             mixin_type, base_enum = mcs._get_mixins_(bases)
         if not issubclass(base_enum, BaseStrEnum):
