@@ -101,7 +101,7 @@ class StrEnumMeta(EnumMeta):
 
     def __new__(mcs, cls, bases, class_dict, sep: AnyStr = None, converter: Callable[[str], str] = None):
         # In Python 3.8 the signature of 'EnumMeta._get_mixins_' was changed from (bases) to (class_name, bases)
-        if len(signature(mcs._get_mixins_).parameters) == 2:  # (class_name, bases)
+        if sys.version_info >= (3, 8):  # (class_name, bases)
             mixin_type, base_enum = mcs._get_mixins_(cls, bases)
         else:  # Fallback to (bases) signature
             mixin_type, base_enum = mcs._get_mixins_(bases)
