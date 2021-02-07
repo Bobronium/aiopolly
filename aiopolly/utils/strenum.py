@@ -2,6 +2,7 @@
 Based on: https://github.com/MrMrRobat/AnyStrEnum
 """
 
+import sys
 from enum import Enum, EnumMeta, _EnumDict, auto
 from types import FunctionType
 from typing import List, Callable, AnyStr, Set, TypeVar, Type, Any
@@ -99,7 +100,11 @@ class StrEnumMeta(EnumMeta):
         return super().__prepare__(*args, **kwargs)
 
     def __new__(mcs, cls, bases, class_dict, sep: AnyStr = None, converter: Callable[[str], str] = None):
-        mixin_type, base_enum = mcs._get_mixins_(bases)
+        # In Python 3.8 the signature of 'EnumMeta._get_mixins_' was changed from (bases) to (class_name, bases)
+        if sys.version_info >= (3, 8):  # (class_name, bases)
+            mixin_type, base_enum = mcs._get_mixins_(cls, bases)
+        else:  # Fallback to (bases) signature
+            mixin_type, base_enum = mcs._get_mixins_(bases)
         if not issubclass(base_enum, BaseStrEnum):
             raise TypeError(f'Unexpected Enum type \'{base_enum.__name__}\'. '
                             f'Only {BaseStrEnum.__name__} and its subclasses are allowed')
