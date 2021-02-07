@@ -2,8 +2,8 @@
 Based on: https://github.com/MrMrRobat/AnyStrEnum
 """
 
+import sys
 from enum import Enum, EnumMeta, _EnumDict, auto
-from inspect import signature
 from types import FunctionType
 from typing import List, Callable, AnyStr, Set, TypeVar, Type, Any
 
